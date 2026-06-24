@@ -932,7 +932,7 @@ export default class LearnFlow extends React.Component {
           <div style={S('padding:14px; border-top:1px solid var(--border)')}>
             <div onClick={v.goTo.settings} className="lf-nav-item" style={S('display:flex; align-items:center; gap:11px; padding:9px; border-radius:12px; cursor:pointer')}>
               <div style={S('width:34px; height:34px; border-radius:99px; background:linear-gradient(135deg,var(--emerald),var(--blue)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px')}>{this.getInitials(this.state.userName)}</div>
-              <div style={S('flex:1; min-width:0')}><div style={S('font-size:13.5px; font-weight:600; white-space:nowrap')}>{this.state.userName || 'Alex Carter'}</div><div style={S('font-size:12px; color:var(--subtle)')}>{this.state.progress.streak > 0 ? this.state.progress.streak + '-day streak 🔥' : 'Start your streak!'}</div></div>
+              <div style={S('flex:1; min-width:0')}><div style={S('font-size:13.5px; font-weight:600; white-space:nowrap')}>{this.state.userName || (this.state.user ? this.state.user.email.split('@')[0] : 'My Account')}</div><div style={S('font-size:12px; color:var(--subtle)')}>{this.state.progress.streak > 0 ? this.state.progress.streak + '-day streak 🔥' : 'Start your streak!'}</div></div>
             </div>
           </div>
         </aside>
@@ -1021,7 +1021,7 @@ export default class LearnFlow extends React.Component {
         e('div', { style: { width: 64, height: 64, borderRadius: 18, margin: '0 auto 22px', background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow)' } },
           e('svg', { width: 32, height: 32, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1' }))),
         e('h2', { style: { fontSize: 30, fontWeight: 800, letterSpacing: '-.03em', margin: '0 0 10px' } }, 'How can I help you learn today?'),
-        e('p', { style: { fontSize: 16, color: 'var(--muted)', margin: '0 auto', maxWidth: 440 } }, "Ask about your Azure roadmap, get a study plan, generate a quiz, or check if you're on track. Every answer is grounded in your data.")
+        e('p', { style: { fontSize: 16, color: 'var(--muted)', margin: '0 auto', maxWidth: 440 } }, this.state.roadmap ? 'Ask anything about your ' + this.state.roadmap.headline + ' roadmap — study plans, quizzes, progress checks, scheduling.' : "Ask me anything about learning — I'll help you build a plan, quiz you, or guide you to your next goal.")
       )
     }
     const bubbles = msgs.map((m, i) => m.role === 'user'
@@ -1068,7 +1068,7 @@ export default class LearnFlow extends React.Component {
     const days = [['M', 60], ['T', 85], ['W', 45], ['T', 92], ['F', 70], ['S', 100], ['S', 38]]
     const max = 100
     const { streak: realStreak, hoursStudied: realHours } = this.state.progress
-    const displayName = this.state.userName || 'Alex'
+    const displayName = this.state.userName || ''
 
     // Today's tasks — from state.tasks (persisted), roadmap, or mock
     const currentTasks = this.state.tasks
@@ -1086,7 +1086,7 @@ export default class LearnFlow extends React.Component {
     // Greeting copy
     const greetText = rm
       ? `Your ${rm.headline} roadmap is ready! 🎯`
-      : `Welcome${displayName !== 'Alex' ? ', ' + displayName : ''} 👋`
+      : `Welcome${displayName ? ', ' + displayName : ''} 👋`
     const greetSub = rm && streak === 0
       ? `${rm.totalWeeks}-week plan, ${rm.hoursPerDay}/day — complete your first tasks to start your streak.`
       : rm
@@ -1318,7 +1318,13 @@ export default class LearnFlow extends React.Component {
     const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     const monthStr = now.toLocaleString('default', { month: 'long' }) + ' ' + now.getFullYear()
 
-    const week = rm ? (() => {
+    if (!rm) return e('div', { style: { textAlign: 'center', padding: '80px 24px' } },
+      e('div', { style: { fontSize: 48, marginBottom: 16 } }, '📅'),
+      e('div', { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, 'No planner yet'),
+      e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginBottom: 24 } }, 'Your weekly planner is generated from your roadmap tasks and phases.'),
+      e('button', { className: 'lf-btn', onClick: this.go('onboarding'), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
+
+    const week = (() => {
       const phase = rm.phases && rm.phases[0]
       const courses = (phase?.courses || []).map((c, i) => ({ t: c.split(' — ')[0], time: i % 2 === 0 ? '7:00' : '19:30', c: 'var(--blue)', soft: 'var(--blue-soft)' }))
       const projects = (phase?.projects || []).map((p) => ({ t: p, time: '10:00', c: 'var(--emerald)', soft: 'var(--emerald-soft)' }))
@@ -1329,29 +1335,15 @@ export default class LearnFlow extends React.Component {
         const items = i < 5 ? pool.slice(i, i + 1) : i === 5 ? projects.slice(0, 2) : [{ t: 'Weekly review with Mentor AI', time: '18:00', c: 'var(--violet)', soft: 'var(--violet-soft)' }]
         return { d, n: String(date.getDate()), today: i === todayIdx, items }
       })
-    })() : [
-      { d: 'Mon', n: String(monday.getDate()), today: todayIdx === 0, items: [{ t: 'Load Balancer deep-dive', time: '7:00', c: 'var(--blue)', soft: 'var(--blue-soft)' }, { t: 'Practice set 3', time: '19:30', c: 'var(--violet)', soft: 'var(--violet-soft)' }] },
-      { d: 'Tue', n: String(monday.getDate() + 1), today: todayIdx === 1, items: [{ t: 'NSG lab', time: '7:00', c: 'var(--blue)', soft: 'var(--blue-soft)' }] },
-      { d: 'Wed', n: String(monday.getDate() + 2), today: todayIdx === 2, items: [{ t: 'AZ-104 mock exam', time: '9:00', c: 'var(--amber)', soft: 'var(--amber-soft)' }, { t: 'Review weak areas', time: '20:00', c: 'var(--violet)', soft: 'var(--violet-soft)' }] },
-      { d: 'Thu', n: String(monday.getDate() + 3), today: todayIdx === 3, items: [] },
-      { d: 'Fri', n: String(monday.getDate() + 4), today: todayIdx === 4, items: [{ t: 'VNet peering', time: '7:00', c: 'var(--blue)', soft: 'var(--blue-soft)' }] },
-      { d: 'Sat', n: String(monday.getDate() + 5), today: todayIdx === 5, items: [{ t: 'Project: hub-spoke net', time: '10:00', c: 'var(--emerald)', soft: 'var(--emerald-soft)' }, { t: 'Reading', time: '15:00', c: 'var(--blue)', soft: 'var(--blue-soft)' }] },
-      { d: 'Sun', n: String(monday.getDate() + 6), today: todayIdx === 6, items: [{ t: 'Weekly review w/ AI', time: '18:00', c: 'var(--violet)', soft: 'var(--violet-soft)' }] },
-    ]
+    })()
 
-    const currentTasks = this.state.tasks || (rm && rm.todaysTasks) || LearnFlow.MOCK_TASKS
-    const kb = rm ? (() => {
-      const phase = rm.phases && rm.phases[0]
-      const phaseLabel = phase ? phase.title : 'Phase 1'
-      return [
-        { col: 'To do', c: 'var(--subtle)', cards: currentTasks.filter((t) => !t.done).map((t) => ({ t: t.t, m: phaseLabel + ' · ' + t.d, c: 'var(--blue)' })).concat((phase?.courses || []).slice(2, 4).map((c) => ({ t: c.split(' — ')[0], m: phaseLabel + ' · Course', c: 'var(--violet)' }))).slice(0, 4) },
-        { col: 'In progress', c: 'var(--blue)', cards: (phase?.courses || []).slice(0, 2).map((c) => ({ t: c.split(' — ')[0], m: phaseLabel, c: 'var(--blue)' })).concat((phase?.projects || []).slice(0, 1).map((p) => ({ t: p, m: phaseLabel + ' · Project', c: 'var(--amber)' }))) },
-        { col: 'Done', c: 'var(--emerald)', cards: currentTasks.filter((t) => t.done).map((t) => ({ t: t.t, m: 'Completed today', c: 'var(--emerald)' })) },
-      ]
-    })() : [
-      { col: 'To do', c: 'var(--subtle)', cards: [{ t: 'VNet peering notes', m: 'AZ-104 · 15 min', c: 'var(--blue)' }, { t: 'Practice set 4', m: 'AZ-104 · 25 min', c: 'var(--blue)' }, { t: 'Read: DR strategies', m: 'AZ-305 · 30 min', c: 'var(--violet)' }] },
-      { col: 'In progress', c: 'var(--blue)', cards: [{ t: 'Configure NSG lab', m: 'AZ-104 · 30 min', c: 'var(--blue)' }, { t: 'Mock exam prep', m: 'AZ-104 · 60 min', c: 'var(--amber)' }] },
-      { col: 'Done', c: 'var(--emerald)', cards: [{ t: 'Load Balancer video', m: 'Completed today', c: 'var(--emerald)' }, { t: 'Storage account lab', m: 'Completed yesterday', c: 'var(--emerald)' }, { t: 'AZ-900 exam', m: 'Passed 892/1000', c: 'var(--emerald)' }] },
+    const currentTasks = this.state.tasks || (rm.todaysTasks || [])
+    const phase = rm.phases && rm.phases[0]
+    const phaseLabel = phase ? phase.title : 'Phase 1'
+    const kb = [
+      { col: 'To do', c: 'var(--subtle)', cards: currentTasks.filter((t) => !t.done).map((t) => ({ t: t.t, m: phaseLabel + ' · ' + t.d, c: 'var(--blue)' })).concat((phase?.courses || []).slice(2, 4).map((c) => ({ t: c.split(' — ')[0], m: phaseLabel + ' · Course', c: 'var(--violet)' }))).slice(0, 4) },
+      { col: 'In progress', c: 'var(--blue)', cards: (phase?.courses || []).slice(0, 2).map((c) => ({ t: c.split(' — ')[0], m: phaseLabel, c: 'var(--blue)' })).concat((phase?.projects || []).slice(0, 1).map((p) => ({ t: p, m: phaseLabel + ' · Project', c: 'var(--amber)' }))) },
+      { col: 'Done', c: 'var(--emerald)', cards: currentTasks.filter((t) => t.done).map((t) => ({ t: t.t, m: 'Completed today', c: 'var(--emerald)' })) },
     ]
 
     const scheduledMins = week.reduce((a, d) => a + d.items.length * 45, 0)
@@ -1706,7 +1698,7 @@ export default class LearnFlow extends React.Component {
   buildSettings() {
     const dark = this.state.theme === 'dark'
     const rm = this.state.roadmap
-    const displayName = this.state.userName || 'Alex Carter'
+    const displayName = this.state.userName || (this.state.user ? this.state.user.email.split('@')[0] : '')
     const initials = this.getInitials(this.state.userName)
     const toggle = (on, onClick) => e('div', { onClick, className: 'lf-btn', style: { width: 46, height: 27, borderRadius: 99, background: on ? 'var(--blue)' : 'var(--surface-3)', padding: 3, cursor: 'pointer', flex: 'none', transition: 'background .25s' } },
       e('div', { style: { width: 21, height: 21, borderRadius: 99, background: '#fff', boxShadow: 'var(--shadow-sm)', transform: on ? 'translateX(19px)' : 'none', transition: 'transform .25s' } }))
@@ -1784,47 +1776,68 @@ export default class LearnFlow extends React.Component {
               e('span', { style: { fontSize: 9.5, fontWeight: i === activeNav ? 700 : 500 } }, n[0])))))))
   }
   buildMobile() {
+    const mobRm = this.state.roadmap
+    const mobProgress = this.state.progress
+    const mobTasks = this.state.tasks || (mobRm && mobRm.todaysTasks) || []
+    const mobName = this.state.userName || (this.state.user ? this.state.user.email.split('@')[0] : 'there')
+    const mobScore = Math.min(999, Math.round(mobProgress.hoursStudied * 100 + mobTasks.filter((t) => t.done).length * 50))
+    const mobScorePct = Math.min(100, Math.round(mobProgress.hoursStudied * 10 + mobTasks.filter((t) => t.done).length * 5))
+    const mobPhases = mobRm ? (mobRm.phases || []).map((p, i) => [String(p.n), p.title, p.cert, p.pct, LearnFlow.PHASE_COLORS[i % LearnFlow.PHASE_COLORS.length].color]) : []
+    const mobOverallPct = mobPhases.length ? Math.round(mobPhases.reduce((a, p) => a + p[3], 0) / mobPhases.length) : 0
+    const mobCurPhase = mobRm ? (mobRm.phases || []).find((p) => p.status === 'In progress') || mobRm.phases?.[0] : null
+    const mobMentorMsg = mobRm && mobCurPhase
+      ? `Focus on ${mobCurPhase.title} — ${mobCurPhase.pct}% complete. ${mobCurPhase.sub}`
+      : 'Generate your roadmap to get personalised daily guidance from Mentor AI.'
+    const mobPlannerDayName = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+    const mobPlannerTasks = mobRm ? mobTasks.slice(0, 3).map((t, i) => [['9:00', '13:00', '19:00'][i], t.t, 'var(--blue)', 'var(--blue-soft)']) : []
+
     const home = e('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-      e('div', { style: { paddingTop: 6 } }, e('div', { style: { fontSize: 13, color: 'var(--muted)' } }, 'Good morning'), e('div', { style: { fontSize: 22, fontWeight: 800, letterSpacing: '-.02em' } }, 'Alex 👋')),
+      e('div', { style: { paddingTop: 6 } }, e('div', { style: { fontSize: 13, color: 'var(--muted)' } }, 'Good morning'), e('div', { style: { fontSize: 22, fontWeight: 800, letterSpacing: '-.02em' } }, mobName + ' 👋')),
       e('div', { style: { borderRadius: 18, padding: 18, background: 'linear-gradient(150deg,var(--blue),var(--violet))', color: '#fff', display: 'flex', alignItems: 'center', gap: 14 } },
         e('div', { style: { position: 'relative', width: 72, height: 72, flex: 'none' } },
-          e('svg', { width: 72, height: 72, viewBox: '0 0 80 80', style: { transform: 'rotate(-90deg)' } }, e('circle', { cx: 40, cy: 40, r: 30, fill: 'none', stroke: 'rgba(255,255,255,.25)', strokeWidth: 8 }), e('circle', { cx: 40, cy: 40, r: 30, fill: 'none', stroke: '#fff', strokeWidth: 8, strokeLinecap: 'round', strokeDasharray: 2 * Math.PI * 30, strokeDashoffset: 2 * Math.PI * 30 * 0.22 })),
-          e('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800 } }, '782')),
-        e('div', {}, e('div', { style: { fontSize: 12, opacity: .85 } }, 'Learning Score'), e('div', { style: { fontSize: 14, fontWeight: 700, marginTop: 3 } }, '▲ 34 this week'), e('div', { style: { fontSize: 12, opacity: .85, marginTop: 2 } }, 'Top 8%'))),
+          e('svg', { width: 72, height: 72, viewBox: '0 0 80 80', style: { transform: 'rotate(-90deg)' } }, e('circle', { cx: 40, cy: 40, r: 30, fill: 'none', stroke: 'rgba(255,255,255,.25)', strokeWidth: 8 }), e('circle', { cx: 40, cy: 40, r: 30, fill: 'none', stroke: '#fff', strokeWidth: 8, strokeLinecap: 'round', strokeDasharray: 2 * Math.PI * 30, strokeDashoffset: 2 * Math.PI * 30 * (1 - mobScorePct / 100) })),
+          e('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800 } }, mobScore)),
+        e('div', {}, e('div', { style: { fontSize: 12, opacity: .85 } }, 'Learning Score'), e('div', { style: { fontSize: 14, fontWeight: 700, marginTop: 3 } }, mobProgress.streak > 0 ? mobProgress.streak + '-day streak 🔥' : 'Start learning!'), e('div', { style: { fontSize: 12, opacity: .85, marginTop: 2 } }, parseFloat(mobProgress.hoursStudied.toFixed(1)) + 'h studied'))),
       e('div', { style: { display: 'flex', gap: 10 } },
-        [['🔥', '24', 'Streak'], ['⏱', '142h', 'Studied'], ['✓', '86%', 'Done']].map((s, i) => e('div', { key: i, style: { flex: 1, borderRadius: 14, background: 'var(--surface)', border: '1px solid var(--border)', padding: '12px 8px', textAlign: 'center' } },
+        [['🔥', String(mobProgress.streak), 'Streak'], ['⏱', parseFloat(mobProgress.hoursStudied.toFixed(1)) + 'h', 'Studied'], ['✓', mobOverallPct + '%', 'Done']].map((s, i) => e('div', { key: i, style: { flex: 1, borderRadius: 14, background: 'var(--surface)', border: '1px solid var(--border)', padding: '12px 8px', textAlign: 'center' } },
           e('div', { style: { fontSize: 16 } }, s[0]), e('div', { style: { fontSize: 17, fontWeight: 800, marginTop: 2 } }, s[1]), e('div', { style: { fontSize: 10.5, color: 'var(--muted)' } }, s[2])))),
       e('div', { style: { fontSize: 14, fontWeight: 700, marginTop: 2 } }, "Today's tasks"),
-      [['AZ-104 practice set', false], ['NSG lab', true]].map((t, i) => e('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: 10, padding: '11px 12px', borderRadius: 13, background: 'var(--surface)', border: '1px solid var(--border)' } },
-        e('span', { style: { width: 20, height: 20, borderRadius: 7, flex: 'none', background: t[1] ? 'var(--emerald)' : 'transparent', border: t[1] ? 'none' : '2px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, t[1] ? e('svg', { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 3.5 }, e('path', { d: 'M20 6 9 17l-5-5' })) : null),
-        e('span', { style: { fontSize: 13.5, fontWeight: 500, textDecoration: t[1] ? 'line-through' : 'none', color: t[1] ? 'var(--subtle)' : 'var(--text)' } }, t[0]))),
+      mobTasks.length > 0
+        ? mobTasks.slice(0, 3).map((t, i) => e('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: 10, padding: '11px 12px', borderRadius: 13, background: 'var(--surface)', border: '1px solid var(--border)' } },
+            e('span', { style: { width: 20, height: 20, borderRadius: 7, flex: 'none', background: t.done ? 'var(--emerald)' : 'transparent', border: t.done ? 'none' : '2px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, t.done ? e('svg', { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 3.5 }, e('path', { d: 'M20 6 9 17l-5-5' })) : null),
+            e('span', { style: { fontSize: 13, fontWeight: 500, textDecoration: t.done ? 'line-through' : 'none', color: t.done ? 'var(--subtle)' : 'var(--text)' } }, t.t)))
+        : e('div', { style: { fontSize: 13, color: 'var(--muted)', padding: '10px 0' } }, 'No tasks yet — generate your roadmap first.'),
       e('div', { style: { borderRadius: 14, padding: 14, background: 'var(--blue-soft)', border: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'flex-start' } },
         e('div', { style: { width: 24, height: 24, borderRadius: 7, flex: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2 }, e('path', { d: 'M12 3v3M12 18v3M3 12h3M18 12h3' }))),
-        e('div', { style: { fontSize: 12.5, lineHeight: 1.45 } }, e('b', {}, 'Mentor AI:'), ' Move practice to Saturday — your completion there is 94%.')))
+        e('div', { style: { fontSize: 12.5, lineHeight: 1.45 } }, e('b', {}, 'Mentor AI:'), ' ' + mobMentorMsg)))
     const roadmap = e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-      e('div', { style: { paddingTop: 6 } }, e('div', { style: { fontSize: 20, fontWeight: 800, letterSpacing: '-.02em' } }, 'Azure Architect'), e('div', { style: { fontSize: 12.5, color: 'var(--muted)', marginTop: 2 } }, '51% · Phase 2 of 4')),
-      [['1', 'Foundation', 'AZ-900', 100, 'var(--emerald)'], ['2', 'Administration', 'AZ-104', 72, 'var(--blue)'], ['3', 'Architecture', 'AZ-305', 28, 'var(--violet)'], ['4', 'Mastery', 'DevOps', 4, 'var(--amber)']].map((p, i) =>
-        e('div', { key: i, style: { display: 'flex', gap: 12, padding: '13px', borderRadius: 15, background: 'var(--surface)', border: '1px solid ' + (p[3] > 0 && p[3] < 100 ? 'var(--blue)' : 'var(--border)') } },
-          e('div', { style: { width: 36, height: 36, flex: 'none', borderRadius: 11, background: p[3] === 100 ? p[4] : 'var(--surface-2)', color: p[3] === 100 ? '#fff' : p[4], display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 } }, p[3] === 100 ? '✓' : p[0]),
-          e('div', { style: { flex: 1 } }, e('div', { style: { display: 'flex', justifyContent: 'space-between' } }, e('span', { style: { fontSize: 14, fontWeight: 700 } }, p[1]), e('span', { style: { fontSize: 10.5, fontWeight: 700, color: p[4] } }, p[2])),
-            e('div', { style: { height: 5, borderRadius: 99, background: 'var(--surface-3)', marginTop: 8, overflow: 'hidden' } }, e('div', { style: { height: '100%', width: p[3] + '%', borderRadius: 99, background: p[4] } }))))))
+      e('div', { style: { paddingTop: 6 } },
+        e('div', { style: { fontSize: 20, fontWeight: 800, letterSpacing: '-.02em' } }, mobRm ? mobRm.headline : 'No roadmap yet'),
+        e('div', { style: { fontSize: 12.5, color: 'var(--muted)', marginTop: 2 } }, mobRm ? (mobOverallPct + '% · Phase ' + (mobRm.phases?.findIndex((p) => p.status === 'In progress') + 1 || 1) + ' of ' + mobPhases.length) : 'Generate your roadmap to get started')),
+      mobPhases.length > 0
+        ? mobPhases.map((p, i) => e('div', { key: i, style: { display: 'flex', gap: 12, padding: '13px', borderRadius: 15, background: 'var(--surface)', border: '1px solid ' + (p[3] > 0 && p[3] < 100 ? 'var(--blue)' : 'var(--border)') } },
+            e('div', { style: { width: 36, height: 36, flex: 'none', borderRadius: 11, background: p[3] === 100 ? p[4] : 'var(--surface-2)', color: p[3] === 100 ? '#fff' : p[4], display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 } }, p[3] === 100 ? '✓' : p[0]),
+            e('div', { style: { flex: 1 } }, e('div', { style: { display: 'flex', justifyContent: 'space-between' } }, e('span', { style: { fontSize: 14, fontWeight: 700 } }, p[1]), e('span', { style: { fontSize: 10.5, fontWeight: 700, color: p[4] } }, p[2])),
+              e('div', { style: { height: 5, borderRadius: 99, background: 'var(--surface-3)', marginTop: 8, overflow: 'hidden' } }, e('div', { style: { height: '100%', width: p[3] + '%', borderRadius: 99, background: p[4] } })))))
+        : e('div', { style: { textAlign: 'center', padding: '20px 0', fontSize: 13, color: 'var(--muted)' } }, 'Build your roadmap to see phases here.'))
     const mentor = e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 8 } },
-      e('div', { style: { display: 'flex', justifyContent: 'flex-end' } }, e('div', { style: { maxWidth: '80%', padding: '10px 13px', borderRadius: '16px 16px 4px 16px', background: 'var(--blue)', color: '#fff', fontSize: 13 } }, 'What should I focus on this week?')),
+      e('div', { style: { display: 'flex', justifyContent: 'flex-end' } }, e('div', { style: { maxWidth: '80%', padding: '10px 13px', borderRadius: '16px 16px 4px 16px', background: 'var(--blue)', color: '#fff', fontSize: 13 } }, 'What should I focus on today?')),
       e('div', { style: { display: 'flex', gap: 9 } },
         e('div', { style: { width: 26, height: 26, flex: 'none', borderRadius: 8, background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2 }, e('path', { d: 'M12 3v3M12 18v3M3 12h3M18 12h3' }))),
-        e('div', { style: { flex: 1 } }, e('div', { style: { fontSize: 13, lineHeight: 1.5 } }, "Focus on the Networking module — you're 72% through and AZ-104 is in 18 days."),
+        e('div', { style: { flex: 1 } }, e('div', { style: { fontSize: 13, lineHeight: 1.5 } }, mobMentorMsg),
           e('div', { style: { marginTop: 10, padding: '9px 11px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)' } },
             e('div', { style: { fontSize: 9.5, fontWeight: 700, color: 'var(--subtle)', letterSpacing: '.05em', marginBottom: 3 } }, 'SOURCE'),
-            e('div', { style: { fontSize: 11.5, fontWeight: 600 } }, 'Your roadmap · Phase 2')))),
+            e('div', { style: { fontSize: 11.5, fontWeight: 600 } }, mobRm ? 'Your roadmap · ' + (mobCurPhase?.title || 'Phase 1') : 'Mentor AI')))),
       e('div', { style: { marginTop: 'auto', display: 'flex', gap: 8, padding: '8px 8px 8px 14px', border: '1.5px solid var(--border-strong)', borderRadius: 14, background: 'var(--surface)' } },
         e('span', { style: { flex: 1, fontSize: 12.5, color: 'var(--subtle)', alignSelf: 'center' } }, 'Ask Mentor AI…'),
         e('div', { style: { width: 30, height: 30, borderRadius: 9, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, e('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M5 12h14M13 6l6 6-6 6' })))))
     const planner = e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 6 } },
-      e('div', {}, e('div', { style: { fontSize: 20, fontWeight: 800, letterSpacing: '-.02em' } }, 'Wed, Feb 14'), e('div', { style: { fontSize: 12.5, color: 'var(--blue)', fontWeight: 600, marginTop: 2 } }, 'Exam day · 2 sessions')),
-      [['9:00', 'AZ-104 mock exam', 'var(--amber)', 'var(--amber-soft)'], ['13:00', 'Lunch break', 'var(--subtle)', 'var(--surface-2)'], ['20:00', 'Review weak areas', 'var(--violet)', 'var(--violet-soft)']].map((s, i) =>
-        e('div', { key: i, style: { display: 'flex', gap: 12 } },
-          e('div', { style: { width: 42, fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', paddingTop: 11, flex: 'none' } }, s[0]),
-          e('div', { style: { flex: 1, padding: '11px 13px', borderRadius: 13, background: s[3], borderLeft: '3px solid ' + s[2] } }, e('div', { style: { fontSize: 13.5, fontWeight: 600 } }, s[1])))),
+      e('div', {}, e('div', { style: { fontSize: 20, fontWeight: 800, letterSpacing: '-.02em' } }, mobPlannerDayName), e('div', { style: { fontSize: 12.5, color: 'var(--blue)', fontWeight: 600, marginTop: 2 } }, mobPlannerTasks.length + ' sessions scheduled')),
+      mobPlannerTasks.length > 0
+        ? mobPlannerTasks.map((s, i) => e('div', { key: i, style: { display: 'flex', gap: 12 } },
+            e('div', { style: { width: 42, fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', paddingTop: 11, flex: 'none' } }, s[0]),
+            e('div', { style: { flex: 1, padding: '11px 13px', borderRadius: 13, background: s[3], borderLeft: '3px solid ' + s[2] } }, e('div', { style: { fontSize: 13.5, fontWeight: 600 } }, s[1]))))
+        : e('div', { style: { textAlign: 'center', padding: '20px 0', fontSize: 13, color: 'var(--muted)' } }, 'No sessions yet — generate your roadmap first.'),
       e('div', { style: { marginTop: 8, padding: '12px', borderRadius: 13, border: '1.5px dashed var(--border-strong)', textAlign: 'center', fontSize: 12.5, color: 'var(--muted)', fontWeight: 600 } }, '+ Add study session'))
     return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 18 } },
       e('div', {}, e('div', { style: { fontSize: 24, fontWeight: 800, letterSpacing: '-.03em' } }, 'Mobile App'),

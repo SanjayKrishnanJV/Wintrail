@@ -225,18 +225,13 @@ export default class LearnFlow extends React.Component {
       }
     }
     return {
-      learner: 'Alex Carter',
-      goal: 'Azure Cloud Architect — 12-month roadmap, ~1 hour/day, target April 2026',
-      phases: [
-        { n: 1, name: 'Foundation (AZ-900)', status: 'Completed (100%)' },
-        { n: 2, name: 'Administration (AZ-104)', status: 'In progress (72%), exam scheduled Feb 14' },
-        { n: 3, name: 'Architecture (AZ-305)', status: 'Upcoming (28%), target Mar 28' },
-        { n: 4, name: 'Mastery (DevOps & IaC)', status: 'Locked (4%)' },
-      ],
-      streakDays: 24,
-      hoursStudied: 142,
-      learningScore: 782,
-      watchAreas: ['Thursday study consistency dips', 'Security & Governance is the weakest domain (58%)'],
+      learner: this.state.userName || 'Learner',
+      goal: 'No roadmap generated yet. Encourage the learner to complete onboarding.',
+      phases: [],
+      streakDays: 0,
+      hoursStudied: 0,
+      learningScore: 0,
+      watchAreas: [],
     }
   }
   newChat() { this.setState({ chatMsgs: [], chatInput: '' }) }
@@ -482,7 +477,7 @@ export default class LearnFlow extends React.Component {
       onChatKey: (ev) => this.onChatKey(ev),
       sendChat: () => this.doSend(),
       newChat: () => this.newChat(),
-      chatHistory: ['AZ-305 study plan for March', 'Explain VNet peering vs VPN', 'Quiz me on Azure storage', 'Am I on track this month?'],
+      chatHistory: this.state.chatMsgs.length > 0 ? ['Recent conversation'] : [],
       chatSuggestions: (() => {
         const rm = this.state.roadmap
         if (rm) {
@@ -1082,36 +1077,32 @@ export default class LearnFlow extends React.Component {
     const doneTasks = currentTasks.filter((t) => t.done).length
 
     // Stats: real when roadmap exists, mock otherwise
-    const score = rm ? Math.min(999, Math.round(realHours * 100 + doneTasks * 50)) : 782
-    const scorePct = rm ? Math.min(100, Math.round(realHours * 10 + doneTasks * 5)) : 78
-    const streak = rm ? realStreak : 24
-    const hoursDisplay = rm ? parseFloat(realHours.toFixed(1)) : 142
+    const score = Math.min(999, Math.round(realHours * 100 + doneTasks * 50))
+    const scorePct = Math.min(100, Math.round(realHours * 10 + doneTasks * 5))
+    const streak = realStreak
+    const hoursDisplay = parseFloat(realHours.toFixed(1))
     const r = this.ring(scorePct, 52)
 
     // Greeting copy
     const greetText = rm
       ? `Your ${rm.headline} roadmap is ready! 🎯`
-      : `Good morning, ${displayName} 👋`
+      : `Welcome${displayName !== 'Alex' ? ', ' + displayName : ''} 👋`
     const greetSub = rm && streak === 0
       ? `${rm.totalWeeks}-week plan, ${rm.hoursPerDay}/day — complete your first tasks to start your streak.`
       : rm
       ? `${streak}-day streak 🔥 Keep it up — ${currentTasks.length - doneTasks} tasks left today.`
-      : "You're on a 24-day streak. 3 tasks due today — let's keep the momentum."
+      : 'Generate your roadmap to get personalised tasks, goals and Mentor AI guidance.'
 
     // Active learning paths
     const activePaths = rm
-      ? [{ t: rm.headline, s: 'Phase 1 of ' + phases.length + ' · ' + (phases[0] ? phases[0].cert : ''), p: 0, c: 'var(--blue)' }]
-      : [{ t: 'Azure Cloud Architect', s: 'Phase 2 of 4 · AZ-104', p: 72, c: 'var(--blue)' },
-         { t: 'System Design Foundations', s: 'Phase 1 of 3', p: 40, c: 'var(--violet)' }]
+      ? [{ t: rm.headline, s: 'Phase 1 of ' + phases.length + ' · ' + (phases[0] ? phases[0].cert : ''), p: phases[0]?.pct || 0, c: 'var(--blue)' }]
+      : []
 
     // Upcoming milestones
     const milestonePalette = ['var(--blue)', 'var(--violet)', 'var(--violet)', 'var(--amber)']
     const milestones = rm && rm.milestones && rm.milestones.length > 0
       ? rm.milestones.map((m, i) => ({ t: m.t, d: m.d, st: i === 0 ? 'current' : 'next', c: milestonePalette[i] || 'var(--violet)' }))
-      : [{ t: 'AZ-104 Exam', d: 'Feb 14', st: 'current', c: 'var(--blue)' },
-         { t: 'System Design Project', d: 'Mar 2', st: 'next', c: 'var(--violet)' },
-         { t: 'AZ-305 Exam', d: 'Mar 28', st: 'next', c: 'var(--violet)' },
-         { t: 'Portfolio Review', d: 'Apr 15', st: 'locked', c: 'var(--subtle)' }]
+      : []
 
     return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 20 } },
       e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 14 } },
@@ -1133,9 +1124,9 @@ export default class LearnFlow extends React.Component {
             e('div', { style: { fontSize: 15, fontWeight: 700, margin: '6px 0 4px' } }, '▲ 34 this week'),
             e('div', { style: { fontSize: 13, opacity: .9 } }, 'Top 8% of learners'))),
         ...[
-          { label: 'Learning Streak', val: String(streak), unit: 'days', sub: streak > 0 ? (rm ? 'Keep going! 💪' : 'Best: 31 days') : 'Start today!', ic: 'M12 2c1 3 4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-2.5C9 9 12 8 12 2z', cl: 'var(--amber)', sf: 'var(--amber-soft)' },
-          { label: 'Time Invested', val: String(hoursDisplay), unit: 'hrs', sub: rm ? (doneTasks + ' tasks done today') : '+8.5 this week', ic: 'M12 6v6l4 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', cl: 'var(--blue)', sf: 'var(--blue-soft)' },
-          { label: 'Completion', val: rm ? String(doneTasks + '/' + currentTasks.length) : '86', unit: rm ? 'tasks' : '%', sub: rm ? 'Today\'s tasks' : 'On 2 active paths', ic: 'M20 6 9 17l-5-5', cl: 'var(--emerald)', sf: 'var(--emerald-soft)' },
+          { label: 'Learning Streak', val: String(streak), unit: 'days', sub: streak > 0 ? 'Keep going! 💪' : 'Start today!', ic: 'M12 2c1 3 4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-2.5C9 9 12 8 12 2z', cl: 'var(--amber)', sf: 'var(--amber-soft)' },
+          { label: 'Time Invested', val: String(hoursDisplay), unit: 'hrs', sub: doneTasks + ' tasks done today', ic: 'M12 6v6l4 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', cl: 'var(--blue)', sf: 'var(--blue-soft)' },
+          { label: 'Tasks today', val: String(doneTasks + '/' + currentTasks.length), unit: '', sub: doneTasks === currentTasks.length && currentTasks.length > 0 ? 'All done! 🎉' : currentTasks.length - doneTasks + ' remaining', ic: 'M20 6 9 17l-5-5', cl: 'var(--emerald)', sf: 'var(--emerald-soft)' },
         ].map((s, i) => e('div', { key: i, className: 'lf-card-h', style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', padding: 20, boxShadow: 'var(--shadow-sm)' } },
           e('div', { style: { width: 38, height: 38, borderRadius: 11, background: s.sf, color: s.cl, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 } },
             e('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: s.ic }))),
@@ -1149,16 +1140,20 @@ export default class LearnFlow extends React.Component {
             e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 } },
               e('span', { style: { fontSize: 16, fontWeight: 700 } }, 'Active Learning Paths'),
               e('span', { onClick: this.go('roadmap'), style: { fontSize: 13, color: 'var(--blue)', fontWeight: 600, cursor: 'pointer' } }, 'View roadmap →')),
-            e('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-              activePaths.map((p, i) =>
-                e('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }, onClick: this.go('roadmap') },
-                  e('div', { style: { position: 'relative', width: 48, height: 48, flex: 'none' } },
-                    (() => { const rr = this.ring(p.p, 20); return e('svg', { width: 48, height: 48, viewBox: '0 0 48 48', style: { transform: 'rotate(-90deg)' } },
-                      e('circle', { cx: 24, cy: 24, r: 20, fill: 'none', stroke: 'var(--surface-3)', strokeWidth: 5 }),
-                      e('circle', { cx: 24, cy: 24, r: 20, fill: 'none', stroke: p.c, strokeWidth: 5, strokeLinecap: 'round', strokeDasharray: rr.c, strokeDashoffset: rr.off })) })(),
-                    e('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 } }, p.p + '%')),
-                  e('div', { style: { flex: 1 } }, e('div', { style: { fontSize: 15, fontWeight: 600 } }, p.t), e('div', { style: { fontSize: 13, color: 'var(--muted)', marginTop: 2 } }, p.s)),
-                  e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--subtle)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M9 6l6 6-6 6' })))))),
+            activePaths.length > 0
+              ? e('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+                  activePaths.map((p, i) =>
+                    e('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }, onClick: this.go('roadmap') },
+                      e('div', { style: { position: 'relative', width: 48, height: 48, flex: 'none' } },
+                        (() => { const rr = this.ring(p.p, 20); return e('svg', { width: 48, height: 48, viewBox: '0 0 48 48', style: { transform: 'rotate(-90deg)' } },
+                          e('circle', { cx: 24, cy: 24, r: 20, fill: 'none', stroke: 'var(--surface-3)', strokeWidth: 5 }),
+                          e('circle', { cx: 24, cy: 24, r: 20, fill: 'none', stroke: p.c, strokeWidth: 5, strokeLinecap: 'round', strokeDasharray: rr.c, strokeDashoffset: rr.off })) })(),
+                        e('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 } }, p.p + '%')),
+                      e('div', { style: { flex: 1 } }, e('div', { style: { fontSize: 15, fontWeight: 600 } }, p.t), e('div', { style: { fontSize: 13, color: 'var(--muted)', marginTop: 2 } }, p.s)),
+                      e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--subtle)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M9 6l6 6-6 6' })))))
+              : e('div', { style: { textAlign: 'center', padding: '20px 0', color: 'var(--muted)', fontSize: 14 } },
+                  e('div', { style: { marginBottom: 10 } }, 'No active roadmap yet.'),
+                  e('span', { onClick: this.go('onboarding'), style: { color: 'var(--blue)', fontWeight: 600, cursor: 'pointer' } }, 'Build my roadmap →'))),
           e('div', { style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', padding: 22, boxShadow: 'var(--shadow-sm)' } },
             e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 } },
               e('span', { style: { fontSize: 16, fontWeight: 700 } }, 'Weekly Progress'),
@@ -1183,7 +1178,7 @@ export default class LearnFlow extends React.Component {
               e('div', { style: { width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
                 e('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1' }))),
               e('span', { style: { fontSize: 14, fontWeight: 700 } }, 'Mentor AI suggests')),
-            e('div', { style: { fontSize: 14.5, lineHeight: 1.55, color: 'var(--text)', marginBottom: 16 } }, rm && rm.watchAreas && rm.watchAreas[0] ? rm.watchAreas[0] : 'Your Thursday consistency is dipping. Move your AZ-104 practice set to Saturday morning — your completion rate there is 94%.'),
+            e('div', { style: { fontSize: 14.5, lineHeight: 1.55, color: 'var(--text)', marginBottom: 16 } }, rm && rm.watchAreas && rm.watchAreas[0] ? rm.watchAreas[0] : 'Generate your roadmap to get personalised Mentor AI suggestions based on your learning track.'),
             e('div', { style: { display: 'flex', gap: 9 } },
               e('button', { className: 'lf-btn', style: { flex: 1, padding: '10px', borderRadius: 11, border: 'none', background: 'var(--blue)', color: '#fff', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Reschedule'),
               e('button', { className: 'lf-btn', style: { padding: '10px 14px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--muted)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Dismiss')))
@@ -1191,23 +1186,26 @@ export default class LearnFlow extends React.Component {
       ),
       e('div', { style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', padding: 22, boxShadow: 'var(--shadow-sm)' } },
         e('div', { style: { fontSize: 16, fontWeight: 700, marginBottom: 20 } }, 'Upcoming Milestones'),
-        e('div', { style: { display: 'flex', gap: 0, position: 'relative' } },
-          milestones.map((m, i, arr) =>
-            e('div', { key: i, style: { flex: 1, position: 'relative', paddingTop: 28 } },
-              i < arr.length - 1 ? e('div', { style: { position: 'absolute', top: 9, left: '50%', right: '-50%', height: 2, background: 'var(--border-strong)' } }) : null,
-              e('div', { style: { position: 'absolute', top: 2, left: '50%', transform: 'translateX(-50%)', width: 16, height: 16, borderRadius: 99, background: m.st === 'locked' ? 'var(--surface-3)' : m.c, border: '3px solid var(--surface)', boxShadow: '0 0 0 1px var(--border)' } }),
-              e('div', { style: { textAlign: 'center' } },
-                e('div', { style: { fontSize: 14, fontWeight: 600, color: m.st === 'locked' ? 'var(--subtle)' : 'var(--text)' } }, m.t),
-                e('div', { style: { fontSize: 12.5, color: 'var(--subtle)', marginTop: 2 } }, m.d)))))
+        milestones.length > 0
+          ? e('div', { style: { display: 'flex', gap: 0, position: 'relative' } },
+              milestones.map((m, i, arr) =>
+                e('div', { key: i, style: { flex: 1, position: 'relative', paddingTop: 28 } },
+                  i < arr.length - 1 ? e('div', { style: { position: 'absolute', top: 9, left: '50%', right: '-50%', height: 2, background: 'var(--border-strong)' } }) : null,
+                  e('div', { style: { position: 'absolute', top: 2, left: '50%', transform: 'translateX(-50%)', width: 16, height: 16, borderRadius: 99, background: m.st === 'locked' ? 'var(--surface-3)' : m.c, border: '3px solid var(--surface)', boxShadow: '0 0 0 1px var(--border)' } }),
+                  e('div', { style: { textAlign: 'center' } },
+                    e('div', { style: { fontSize: 14, fontWeight: 600, color: m.st === 'locked' ? 'var(--subtle)' : 'var(--text)' } }, m.t),
+                    e('div', { style: { fontSize: 12.5, color: 'var(--subtle)', marginTop: 2 } }, m.d)))))
+          : e('div', { style: { textAlign: 'center', padding: '16px 0', color: 'var(--muted)', fontSize: 14 } },
+              'Milestones will appear here once your roadmap is generated.')
       )
     )
   }
 
   static MOCK_TASKS = [
-    { t: 'Watch: Azure Load Balancer deep-dive', d: '45 min', done: false },
-    { t: 'Lab: Configure a Network Security Group', d: '30 min', done: false },
-    { t: 'AZ-104 practice questions (set 4)', d: '25 min', done: false },
-    { t: 'Review notes: VNet peering', d: '15 min', done: false },
+    { t: 'Review your learning goals for today', d: '10 min', done: false },
+    { t: 'Read or watch: core concept for your topic', d: '30 min', done: false },
+    { t: 'Complete a practice exercise or quiz', d: '20 min', done: false },
+    { t: 'Reflect and take notes on what you learned', d: '10 min', done: false },
   ]
 
   // Phase color palette — assigned by index so CSS vars stay client-side only.
@@ -1226,34 +1224,21 @@ export default class LearnFlow extends React.Component {
         return { ...p, color: c.color, soft: c.soft }
       })
     }
-    // Mock data shown before real roadmap is generated.
-    return [
-      { n: 1, title: 'Foundation', cert: 'AZ-900', sub: 'Cloud fundamentals & the Azure portal', pct: 100, status: 'Completed', weeks: 'Weeks 1–6', color: 'var(--emerald)', soft: 'var(--emerald-soft)',
-        skills: ['Cloud concepts (IaaS/PaaS/SaaS)', 'Core Azure services', 'Pricing & SLAs', 'Azure portal & CLI'],
-        courses: ['AZ-900 Exam Prep — Microsoft Learn', 'Azure Fundamentals — LinkedIn Learning'],
-        projects: ['Deploy your first VM & web app', 'Build a cost-estimate for a sample workload'],
-        assessment: 'AZ-900 certification exam · Passed (892/1000)' },
-      { n: 2, title: 'Administration', cert: 'AZ-104', sub: 'Compute, networking, storage & identity', pct: 72, status: 'In progress', weeks: 'Weeks 7–22', color: 'var(--blue)', soft: 'var(--blue-soft)',
-        skills: ['Virtual networks & NSGs', 'Azure AD & RBAC', 'VM scale sets & App Service', 'Storage accounts & backup'],
-        courses: ['AZ-104 Administrator — Microsoft Learn', 'Networking deep-dive — A Cloud Guru', 'Hands-on labs — Microsoft Learn Sandbox'],
-        projects: ['Design a hub-and-spoke network', 'Configure a load-balanced web tier', 'Set up monitoring & alerts'],
-        assessment: 'AZ-104 certification exam · Scheduled Feb 14' },
-      { n: 3, title: 'Architecture', cert: 'AZ-305', sub: 'Designing solutions, security & governance', pct: 28, status: 'Upcoming', weeks: 'Weeks 23–40', color: 'var(--violet)', soft: 'var(--violet-soft)',
-        skills: ['Well-Architected Framework', 'Identity & governance design', 'Resiliency & DR strategy', 'Cost optimization'],
-        courses: ['AZ-305 Solutions Architect — Microsoft Learn', 'Architecture case studies — Pluralsight'],
-        projects: ['Design a multi-region resilient app', 'Author a governance & policy model'],
-        assessment: 'AZ-305 certification exam · Target Mar 28' },
-      { n: 4, title: 'Mastery', cert: 'DevOps & IaC', sub: 'Automation, IaC & real-world delivery', pct: 4, status: 'Locked', weeks: 'Weeks 41–52', color: 'var(--amber)', soft: 'var(--amber-soft)',
-        skills: ['Bicep & Terraform', 'CI/CD with Azure DevOps', 'GitOps & automation', 'Observability at scale'],
-        courses: ['Infrastructure as Code — HashiCorp', 'Azure DevOps — Microsoft Learn'],
-        projects: ['Ship a fully automated landing zone', 'Build an end-to-end CI/CD pipeline'],
-        assessment: 'Capstone: production-grade reference architecture' },
-    ]
+    return []
   }
   buildRoadmap() {
     const rm = this.state.roadmap
+    if (!rm) return e('div', { style: { textAlign: 'center', padding: '80px 24px' } },
+      e('div', { style: { fontSize: 48, marginBottom: 16 } }, '🗺️'),
+      e('div', { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, 'No roadmap yet'),
+      e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginBottom: 24 } }, 'Tell Mentor AI your goal and get a personalised learning roadmap in seconds.'),
+      e('button', { className: 'lf-btn', onClick: this.go('onboarding'), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
+
     const phases = this.roadmapData()
-    const sel = phases[this.state.roadmapPhase]
+    const selIdx = Math.min(this.state.roadmapPhase, phases.length - 1)
+    const sel = phases[selIdx] || phases[0]
+    if (!sel) return null
+
     const col = (title, items, icon, clr) => e('div', { style: { borderRadius: 16, background: 'var(--surface-2)', border: '1px solid var(--border)', padding: 18 } },
       e('div', { style: { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 } },
         e('div', { style: { width: 30, height: 30, borderRadius: 9, background: 'var(--surface)', color: clr, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' } },
@@ -1263,22 +1248,19 @@ export default class LearnFlow extends React.Component {
         items.map((it, i) => e('div', { key: i, style: { display: 'flex', gap: 9, fontSize: 13.5, lineHeight: 1.45, color: 'var(--text)' } },
           e('span', { style: { width: 5, height: 5, borderRadius: 99, background: clr, marginTop: 7, flex: 'none' } }), it))))
 
-    // Hero header values — real if roadmap exists, mock otherwise
-    const rmHeadline = rm ? rm.headline : 'Azure Cloud Architect'
-    const rmPathLine = rm ? `${rm.totalWeeks}-week path · ${rm.hoursPerDay}/day · Target: ${rm.targetDate}` : '12-month path · 1 hour/day · Target: Apr 2026'
-    const rmTotalWeeks = rm ? rm.totalWeeks : 52
+    const rmTotalWeeks = rm.totalWeeks
     const rmCompletedWeeks = Math.round(phases.reduce((a, p) => a + (p.pct / 100) * (p.numWeeks || 1), 0))
     const rmOverallPct = Math.round(phases.reduce((a, p) => a + p.pct, 0) / phases.length)
     const rmCurPhase = phases.findIndex((p) => p.status === 'In progress') + 1 || 1
-    const rmStats = [['Overall', rmOverallPct + '%'], ['Phase', rmCurPhase + ' of ' + phases.length], ['Streak', rm ? '0 days' : '24 days'], ['On track', 'Yes']]
+    const rmStats = [['Overall', rmOverallPct + '%'], ['Phase', rmCurPhase + ' of ' + phases.length], ['Streak', this.state.progress.streak + ' days'], ['On track', 'Yes']]
 
     return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 22 } },
       e('div', { style: { borderRadius: 24, padding: '28px 30px', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', boxShadow: 'var(--shadow)', position: 'relative', overflow: 'hidden' } },
         e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 } },
           e('div', {},
             e('div', { style: { fontSize: 12.5, fontWeight: 700, letterSpacing: '.1em', opacity: .85, marginBottom: 8 } }, 'YOUR LEARNING ROADMAP'),
-            e('div', { style: { fontSize: 30, fontWeight: 800, letterSpacing: '-.03em', marginBottom: 6 } }, rmHeadline),
-            e('div', { style: { fontSize: 15, opacity: .9 } }, rmPathLine)),
+            e('div', { style: { fontSize: 30, fontWeight: 800, letterSpacing: '-.03em', marginBottom: 6 } }, rm.headline),
+            e('div', { style: { fontSize: 15, opacity: .9 } }, rm.totalWeeks + '-week path · ' + rm.hoursPerDay + '/day · Target: ' + rm.targetDate)),
           e('div', { style: { display: 'flex', gap: 26 } },
             rmStats.map((k, i) =>
               e('div', { key: i }, e('div', { style: { fontSize: 24, fontWeight: 800, letterSpacing: '-.02em' } }, k[1]), e('div', { style: { fontSize: 12.5, opacity: .8, marginTop: 2 } }, k[0]))))),
@@ -1289,11 +1271,11 @@ export default class LearnFlow extends React.Component {
       ),
       e('div', { style: { display: 'grid', gridTemplateColumns: '320px 1fr', gap: 22, alignItems: 'start' } },
         e('div', { style: { display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' } },
-          phases.map((p, i) => { const active = i === this.state.roadmapPhase; return e('div', { key: i, onClick: this.selectPhase(i), className: 'lf-btn', style: { cursor: 'pointer', display: 'flex', gap: 16, paddingBottom: i < 3 ? 18 : 0 } },
+          phases.map((p, i) => { const active = i === selIdx; return e('div', { key: i, onClick: this.selectPhase(i), className: 'lf-btn', style: { cursor: 'pointer', display: 'flex', gap: 16, paddingBottom: i < phases.length - 1 ? 18 : 0 } },
             e('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center' } },
               e('div', { style: { width: 44, height: 44, flex: 'none', borderRadius: 13, background: active ? p.color : p.soft, color: active ? '#fff' : p.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16, boxShadow: active ? 'var(--shadow)' : 'none', transition: 'all .3s' } },
                 p.pct === 100 ? e('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M20 6 9 17l-5-5' })) : p.n),
-              i < 3 ? e('div', { style: { width: 2, flex: 1, minHeight: 40, background: 'var(--border-strong)', marginTop: 6 } }) : null),
+              i < phases.length - 1 ? e('div', { style: { width: 2, flex: 1, minHeight: 40, background: 'var(--border-strong)', marginTop: 6 } }) : null),
             e('div', { style: { flex: 1, padding: '4px 16px', borderRadius: 14, background: active ? 'var(--surface)' : 'transparent', border: active ? '1px solid var(--border)' : '1px solid transparent', boxShadow: active ? 'var(--shadow-sm)' : 'none', transition: 'all .3s' } },
               e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
                 e('span', { style: { fontSize: 15.5, fontWeight: 700 } }, 'Phase ' + p.n + ' · ' + p.title),

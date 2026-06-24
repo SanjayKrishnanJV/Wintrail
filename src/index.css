@@ -1,0 +1,59 @@
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body { margin: 0; }
+
+.lf {
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.lf[data-theme="light"] {
+  --bg:#FAFBFC; --surface:#FFFFFF; --surface-2:#F4F6F9; --surface-3:#EDF1F6;
+  --border:rgba(15,23,42,.08); --border-strong:rgba(15,23,42,.13);
+  --text:#0F172A; --muted:#64748B; --subtle:#94A3B8;
+  --blue:#2563EB; --blue-soft:rgba(37,99,235,.10); --blue-ink:#1D4ED8;
+  --emerald:#10B981; --emerald-soft:rgba(16,185,129,.12);
+  --amber:#F59E0B; --amber-soft:rgba(245,158,11,.14);
+  --violet:#7C3AED; --violet-soft:rgba(124,58,237,.10);
+  --glass:rgba(255,255,255,.72); --glass-border:rgba(255,255,255,.6);
+  --shadow-sm:0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.05);
+  --shadow:0 12px 32px -14px rgba(15,23,42,.22);
+  --shadow-lg:0 30px 70px -26px rgba(15,23,42,.34);
+  --grid:rgba(15,23,42,.05);
+}
+
+.lf[data-theme="dark"] {
+  --bg:#080C16; --surface:#10172A; --surface-2:#161F36; --surface-3:#1D2840;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
+  --text:#F1F5F9; --muted:#94A3B8; --subtle:#64748B;
+  --blue:#3B82F6; --blue-soft:rgba(59,130,246,.16); --blue-ink:#60A5FA;
+  --emerald:#34D399; --emerald-soft:rgba(52,211,153,.15);
+  --amber:#FBBF24; --amber-soft:rgba(251,191,36,.15);
+  --violet:#A78BFA; --violet-soft:rgba(167,139,250,.15);
+  --glass:rgba(16,23,42,.66); --glass-border:rgba(255,255,255,.08);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+  --shadow:0 16px 40px -16px rgba(0,0,0,.6);
+  --shadow-lg:0 36px 80px -28px rgba(0,0,0,.7);
+  --grid:rgba(255,255,255,.06);
+}
+
+@keyframes lf-fade { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform:none; } }
+@keyframes lf-pop { from { opacity:0; transform: scale(.96); } to { opacity:1; transform:none; } }
+@keyframes lf-pulse { 0%,100% { opacity:.35; } 50% { opacity:1; } }
+@keyframes lf-spin { to { transform: rotate(360deg); } }
+@keyframes lf-draw { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: var(--off); } }
+@keyframes lf-blink { 0%,100%{opacity:.2} 50%{opacity:1} }
+@keyframes lf-rise { from { transform: scaleY(.0); } to { transform: scaleY(1); } }
+
+.lf-screen { animation: lf-fade .45s cubic-bezier(.22,1,.36,1) both; }
+.lf-scroll::-webkit-scrollbar { width:10px; height:10px; }
+.lf-scroll::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:99px; border:3px solid transparent; background-clip:padding-box; }
+.lf-nav-item:hover { background: var(--surface-2) !important; }
+.lf-card-h { transition: transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s; }
+.lf-card-h:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg) !important; }
+.lf-btn { transition: transform .15s, box-shadow .2s, background .2s, border-color .2s; }
+.lf-btn:hover { transform: translateY(-1px); }
+.lf-btn:active { transform: translateY(0); }
+
+/* Inputs inherit the design font and reset their default chrome */
+.lf input { font-family: inherit; }

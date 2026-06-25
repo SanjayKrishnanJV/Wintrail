@@ -1,6 +1,26 @@
 import React from 'react'
 import { supabase } from './supabase.js'
 
+// In Capacitor mobile builds, VITE_API_BASE is set to the Vercel deployment URL.
+// In web (dev + prod), it is empty so relative paths are used.
+const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+
+// Haptic tap — light impact on native iOS/Android, silent no-op on web.
+const haptic = (() => {
+  let _hap = null
+  return async () => {
+    try {
+      if (!_hap) {
+        const { Capacitor } = await import('@capacitor/core')
+        if (!Capacitor.isNativePlatform()) return
+        const mod = await import('@capacitor/haptics')
+        _hap = mod.Haptics
+      }
+      await _hap.impact({ style: 'light' })
+    } catch { /* not native */ }
+  }
+})()
+
 const e = React.createElement
 
 // Convert an inline CSS string into a React style object (supports template literals).
@@ -168,6 +188,7 @@ export default class LearnFlow extends React.Component {
 
   go(screen) {
     return () => {
+      haptic()
       this.setState({ screen })
       const m = document.querySelector('main.lf-scroll')
       if (m) m.scrollTop = 0
@@ -190,7 +211,7 @@ export default class LearnFlow extends React.Component {
             this._t = setTimeout(() => this.setState({ obPhase: 'done' }), 400)
           }
         }
-        fetch('/api/roadmap', {
+        fetch(API_BASE + '/api/roadmap', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...obData }),
@@ -238,7 +259,7 @@ export default class LearnFlow extends React.Component {
     const history = [...this.state.chatMsgs, { role: 'user', text }]
     this.setState((s) => ({ chatMsgs: [...s.chatMsgs, { role: 'user', text }], chatInput: '', chatTyping: true }))
     try {
-      const res = await fetch('/api/mentor', {
+      const res = await fetch(API_BASE + '/api/mentor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -32,3 +32,12 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Capacitor native build artifacts (keep source, skip generated build caches)
+ios/App/Pods/
+ios/App/*.xcworkspace/xcuserdata/
+android/.gradle/
+android/app/build/
+android/build/
+*.xcuserstate
+*.xcbkptlist

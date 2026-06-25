@@ -1,0 +1,38 @@
+{
+  "appId": "com.learnflowai.app",
+  "appName": "LearnFlow AI",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#080C16",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "iosSpinnerStyle": "small",
+      "spinnerColor": "#3B82F6"
+    },
+    "StatusBar": {
+      "style": "Dark",
+      "backgroundColor": "#080C16"
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#2563EB",
+      "sound": "beep.wav"
+    }
+  },
+  "ios": {
+    "contentInset": "always",
+    "scheme": "learnflowai",
+    "backgroundColor": "#080C16"
+  },
+  "android": {
+    "backgroundColor": "#080C16"
+  }
+}

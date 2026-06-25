@@ -40,12 +40,19 @@ function apiPlugin(name, path, handler) {
 export default defineConfig(({ mode }) => {
   // loadEnv with '' prefix reads ALL vars from .env (incl. non-VITE_ secrets)
   // into this Node-side config only — they are not exposed to client code.
+  // 'mobile' mode auto-loads .env.mobile (Vite convention: .env.[mode])
   const env = loadEnv(mode, process.cwd(), '')
+
+  const isMobile = mode === 'mobile'
+
   return {
     plugins: [
       react(),
-      apiPlugin('mentor-api', '/api/mentor', (body) => mentorReply(body, env)),
-      apiPlugin('roadmap-api', '/api/roadmap', (body) => generateRoadmap(body, env)),
+      // Dev-only API middleware — not needed for mobile builds (API calls go to Vercel)
+      ...(isMobile ? [] : [
+        apiPlugin('mentor-api', '/api/mentor', (body) => mentorReply(body, env)),
+        apiPlugin('roadmap-api', '/api/roadmap', (body) => generateRoadmap(body, env)),
+      ]),
     ],
     server: { port: 5173, open: true },
   }

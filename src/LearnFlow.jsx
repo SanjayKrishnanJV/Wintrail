@@ -96,34 +96,34 @@ export default class LearnFlow extends React.Component {
 
   // ---------- LIFECYCLE ----------
   componentDidMount() {
+    // ALWAYS restore localStorage first — synchronous, instant, sets _dataLoaded=true.
+    // This guarantees the user always sees their data on refresh, regardless of whether
+    // Supabase is slow, fails, or hasn't responded yet.
+    this._restoreLocal()
+
     if (supabase) {
-      // onAuthStateChange fires immediately with current session then on every change
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (session && !this.state.user) {
-          // Cold load (page refresh or external sign-in)
+        if (session) {
           this.setState({ user: session.user, sessionLoading: false })
+          // Sync with Supabase in background — will merge fresher cloud data over local cache
           this.loadFromSupabase(session.user.id)
-        } else if (session && this.state.user && !this._dataLoaded) {
-          // Auth state fired after doAuth already set the user (signup flow).
-          // loadFromSupabase was skipped — enable saves so onboarding result is persisted.
-          this._dataLoaded = true
+        } else if (event !== 'INITIAL_SESSION') {
+          // SIGNED_OUT
           this.setState({ sessionLoading: false })
-        } else if (!session && event !== 'INITIAL_SESSION') {
-          // SIGNED_OUT — already handled by doSignOut; just clear loading
+        } else {
+          // No session at all
           this.setState({ sessionLoading: false })
-        } else if (!session) {
-          this.setState({ sessionLoading: false })
-          this._restoreLocal()
         }
       })
       this._authSub = subscription
     } else {
       this.setState({ sessionLoading: false })
-      this._restoreLocal()
     }
   }
 
   _restoreLocal() {
+    // _dataLoaded is set true unconditionally at the end — saves are always allowed
+    // after this point, even when there's no cached data (new user creating first roadmap).
     try {
       const saved = JSON.parse(localStorage.getItem('lf_state') || 'null')
       if (saved) {
@@ -135,7 +135,6 @@ export default class LearnFlow extends React.Component {
         if (saved.tasks || saved.roadmap) {
           const todayIso = new Date().toISOString().slice(0, 10)
           if (saved.progress?.lastDate !== todayIso && saved.roadmap) {
-            // New day → rotate tasks from current phase (done after setState via timeout)
             this._pendingTaskRefresh = saved.roadmap
           }
           patch.tasks = saved.tasks ? saved.tasks.map((t) => ({ ...t, done: false })) : null
@@ -152,9 +151,7 @@ export default class LearnFlow extends React.Component {
         if (Object.keys(patch).length) this.setState(patch, () => {
           if (patch.settings?.accentColor) this._applyAccent(patch.settings.accentColor)
         })
-        this._dataLoaded = true
       }
-      // Rotate daily tasks if it's a new day
       if (this._pendingTaskRefresh) {
         const rm = this._pendingTaskRefresh; this._pendingTaskRefresh = null
         setTimeout(() => {
@@ -163,7 +160,7 @@ export default class LearnFlow extends React.Component {
         }, 50)
       }
     } catch { /* ignore */ }
-    // Mark data as loaded even if nothing was in localStorage so new data can be saved
+    // Always unlock saves — even when localStorage is empty (new user)
     this._dataLoaded = true
   }
 
@@ -566,9 +563,11 @@ export default class LearnFlow extends React.Component {
   // ---------- SUPABASE AUTH ----------
   async loadFromSupabase(userId) {
     try {
-      const { data } = await supabase.from('user_data').select('*').eq('id', userId).single()
-      if (data) {
-        const patch = { screen: 'dashboard' }
+      const { data, error } = await supabase.from('user_data').select('*').eq('id', userId).single()
+      if (data && !error) {
+        // Merge Supabase data over what's already in state (from localStorage restore).
+        // Only overwrite fields that actually exist in the cloud record.
+        const patch = {}
         if (data.roadmap) patch.roadmap = data.roadmap
         if (data.tasks) patch.tasks = data.tasks
         if (data.progress) patch.progress = data.progress
@@ -576,29 +575,34 @@ export default class LearnFlow extends React.Component {
         if (data.ob_data && data.ob_data.topic) { patch.obData = data.ob_data; patch.obPhase = 'done' }
         if (data.chat_msgs && data.chat_msgs.length) patch.chatMsgs = data.chat_msgs
         if (data.settings) patch.settings = { ...this.state.settings, ...data.settings }
-        if (Array.isArray(data.saved_roadmaps)) patch.savedRoadmaps = data.saved_roadmaps
+        if (Array.isArray(data.saved_roadmaps) && data.saved_roadmaps.length) patch.savedRoadmaps = data.saved_roadmaps
         if (data.planner_items && typeof data.planner_items === 'object') patch.plannerItems = data.planner_items
         if (data.kanban_cards) patch.kanbanCards = data.kanban_cards
         if (data.expanded_skill_phases) patch.expandedSkillPhases = data.expanded_skill_phases
         if (Array.isArray(data.custom_goals)) patch.customGoals = data.custom_goals
-        // Set flag before setState so the resulting componentDidUpdate is allowed to save
-        this._dataLoaded = true
-        this.setState(patch, () => {
-          // Rotate tasks on new day after cloud restore
-          const todayIso = new Date().toISOString().slice(0, 10)
-          if (data.progress?.lastDate !== todayIso && this.state.roadmap) {
-            const fresh = this._generateDailyTasks(this.state.roadmap)
-            if (fresh) this.setState({ tasks: fresh })
-          }
-        })
+        // Navigate to dashboard only if Supabase has meaningful data
+        if (data.roadmap || data.user_name) patch.screen = 'dashboard'
+        if (Object.keys(patch).length) {
+          this.setState(patch, () => {
+            const todayIso = new Date().toISOString().slice(0, 10)
+            if (data.progress?.lastDate !== todayIso && this.state.roadmap) {
+              const fresh = this._generateDailyTasks(this.state.roadmap)
+              if (fresh) this.setState({ tasks: fresh })
+            }
+          })
+        }
       } else {
-        // New user — no data yet; allow saves so onboarding result gets persisted
-        this._dataLoaded = true
-        this.setState({ screen: 'onboarding' })
+        // No Supabase record yet — only go to onboarding if localStorage also has no roadmap
+        if (!this.state.roadmap && !this.state.savedRoadmaps?.length) {
+          this.setState({ screen: 'onboarding' })
+        }
       }
     } catch {
-      this._dataLoaded = true
-      this.setState({ screen: 'onboarding' })
+      // Network/DB error — localStorage data (already restored) is the fallback.
+      // Only redirect to onboarding if there's truly nothing to show.
+      if (!this.state.roadmap && !this.state.savedRoadmaps?.length) {
+        this.setState({ screen: 'onboarding' })
+      }
     }
   }
 
@@ -618,7 +622,7 @@ export default class LearnFlow extends React.Component {
         chat_msgs: chatMsgs,
         updated_at: new Date().toISOString(),
       })
-    } catch { /* non-fatal — local save already happened */ }
+    } catch (err) { console.warn('[LearnFlow] Supabase save failed:', err?.message) }
   }
 
   async doAuth() {

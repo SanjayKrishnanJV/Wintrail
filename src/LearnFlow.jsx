@@ -100,8 +100,14 @@ export default class LearnFlow extends React.Component {
       // onAuthStateChange fires immediately with current session then on every change
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (session && !this.state.user) {
+          // Cold load (page refresh or external sign-in)
           this.setState({ user: session.user, sessionLoading: false })
           this.loadFromSupabase(session.user.id)
+        } else if (session && this.state.user && !this._dataLoaded) {
+          // Auth state fired after doAuth already set the user (signup flow).
+          // loadFromSupabase was skipped — enable saves so onboarding result is persisted.
+          this._dataLoaded = true
+          this.setState({ sessionLoading: false })
         } else if (!session && event !== 'INITIAL_SESSION') {
           // SIGNED_OUT — already handled by doSignOut; just clear loading
           this.setState({ sessionLoading: false })
@@ -575,8 +581,9 @@ export default class LearnFlow extends React.Component {
         if (data.kanban_cards) patch.kanbanCards = data.kanban_cards
         if (data.expanded_skill_phases) patch.expandedSkillPhases = data.expanded_skill_phases
         if (Array.isArray(data.custom_goals)) patch.customGoals = data.custom_goals
+        // Set flag before setState so the resulting componentDidUpdate is allowed to save
+        this._dataLoaded = true
         this.setState(patch, () => {
-          this._dataLoaded = true
           // Rotate tasks on new day after cloud restore
           const todayIso = new Date().toISOString().slice(0, 10)
           if (data.progress?.lastDate !== todayIso && this.state.roadmap) {
@@ -596,7 +603,7 @@ export default class LearnFlow extends React.Component {
   }
 
   async _saveToSupabase() {
-    if (!supabase || !this.state.user) return
+    if (!supabase || !this.state.user || !this._dataLoaded) return
     const { roadmap, savedRoadmaps, tasks, progress, userName, obData, chatMsgs, settings, plannerItems, kanbanCards, expandedSkillPhases } = this.state
     try {
       await supabase.from('user_data').upsert({
@@ -628,6 +635,8 @@ export default class LearnFlow extends React.Component {
         const resolvedName = authName.trim() || authEmail.split('@')[0]
         if (data.session) {
           localStorage.removeItem('lf_state')
+          // New user — no prior data to load, enable saves immediately
+          this._dataLoaded = true
           this.setState({ user: data.user, userName: resolvedName, authLoading: false, authName: '', authEmail: '', authPassword: '', screen: 'onboarding', obStep: 1, obData: { topic: '', level: '', goal: '', time: '', hasLinks: '', userLinks: '' }, obPhase: 'question', obGenIdx: 0, obCustom: '', roadmap: null, tasks: null, progress: { streak: 0, hoursStudied: 0, lastDate: null, dates: [] } })
         } else {
           this.setState({ authLoading: false, authError: '✉️ Check your inbox to confirm your account, then sign in.' })

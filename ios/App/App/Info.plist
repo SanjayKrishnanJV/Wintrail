@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>LearnFlow AI</string>
+        <string>Wintrail</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -72,15 +72,15 @@
 		<string>remote-notification</string>
 	</array>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>LearnFlow AI uses this to personalise your learning experience.</string>
+	<string>Wintrail uses this to personalise your learning experience.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.learnflowai.app</string>
+			<string>com.wintrail.app</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>learnflowai</string>
+				<string>wintrail</string>
 			</array>
 		</dict>
 	</array>

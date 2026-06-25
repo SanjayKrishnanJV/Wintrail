@@ -1,6 +1,6 @@
 {
-  "appId": "com.learnflowai.app",
-  "appName": "LearnFlow AI",
+  "appId": "com.wintrail.app",
+  "appName": "Wintrail",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "plugins": {
@@ -29,7 +29,7 @@
   },
   "ios": {
     "contentInset": "always",
-    "scheme": "learnflowai",
+    "scheme": "wintrail",
     "backgroundColor": "#080C16"
   },
   "android": {

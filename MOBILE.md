@@ -1,7 +1,19 @@
-# LearnFlow AI — Mobile App
+# Wintrail — Mobile App
 
 Built with Capacitor 8 wrapping the Vite + React web app.  
-Bundle ID: `com.learnflowai.app`
+Bundle ID: `com.wintrail.app`
+
+---
+
+## App Store Required URLs
+
+| Field | URL |
+|---|---|
+| Privacy Policy | https://learnflow-ai-two.vercel.app/privacy.html |
+| Terms of Service | https://learnflow-ai-two.vercel.app/terms.html |
+| Support URL | https://learnflow-ai-two.vercel.app/support.html |
+| Marketing URL | https://wintrail.vercel.app |
+| Support Email | Sanjaykrishnanjv@gmail.com |
 
 ---
 
@@ -48,7 +60,7 @@ npm run cap:ios   # builds + opens Xcode
 ### 2. Configure signing
 - In Xcode → **App target → Signing & Capabilities**
 - Set your **Team** (Apple Developer account)
-- Bundle ID is already set to `com.learnflowai.app`
+- Bundle ID is already set to `com.wintrail.app`
 
 ### 3. Set version
 - `MARKETING_VERSION` = e.g. `1.0.0`
@@ -60,18 +72,21 @@ npm run cap:ios   # builds + opens Xcode
 
 ### 5. App Store Connect
 - Log in to [appstoreconnect.apple.com](https://appstoreconnect.apple.com)
-- Create a new app with bundle ID `com.learnflowai.app`
+- Create a new app with bundle ID `com.wintrail.app`
 - Fill in metadata, screenshots, description
 - Select the uploaded build → Submit for Review
 
 ### Required App Store metadata
 | Field | Value |
 |---|---|
-| Name | LearnFlow AI |
+| Name | Wintrail |
 | Subtitle | Your AI Learning Architect |
 | Category | Education |
 | Content Rating | 4+ |
-| Privacy Policy URL | (add your URL) |
+| Privacy Policy URL | https://learnflow-ai-two.vercel.app/privacy.html |
+| Terms of Service URL | https://learnflow-ai-two.vercel.app/terms.html |
+| Support URL | https://learnflow-ai-two.vercel.app/support.html |
+| Marketing URL | https://wintrail.vercel.app |
 
 ---
 
@@ -99,7 +114,7 @@ android {
 
 ### 4. Google Play Console
 - Log in to [play.google.com/console](https://play.google.com/console)
-- Create a new app
+- Create a new app with package name `com.wintrail.app`
 - Upload the `.aab` file to **Production** track
 - Fill in store listing, screenshots, content rating
 - Submit for review
@@ -107,10 +122,11 @@ android {
 ### Required Play Store metadata
 | Field | Value |
 |---|---|
-| App name | LearnFlow AI |
+| App name | Wintrail |
 | Short description | AI-powered personalised learning roadmaps |
 | Category | Education |
 | Content rating | Everyone |
+| Privacy Policy URL | https://learnflow-ai-two.vercel.app/privacy.html |
 
 ---
 

@@ -596,7 +596,7 @@ export default class LearnFlow extends React.Component {
     const payload = { userName, obData, roadmap, savedRoadmaps, tasks, progress, plannerItems, kanbanCards, customGoals, exportedAt: new Date().toISOString() }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = 'learnflow-export.json'; a.click()
+    const a = document.createElement('a'); a.href = url; a.download = 'wintrail-export.json'; a.click()
     URL.revokeObjectURL(url)
   }
 
@@ -1006,7 +1006,7 @@ export default class LearnFlow extends React.Component {
               <div style={S('width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm)')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7l8-4 8 4-8 4-8-4z" /><path d="M4 7v6l8 4 8-4V7" /></svg>
               </div>
-              <span style={S('font-weight:800; font-size:18px; letter-spacing:-.02em')}>LearnFlow<span style={S('color:var(--blue)')}> AI</span></span>
+              <span style={S('font-weight:800; font-size:18px; letter-spacing:-.02em')}>Wintrail</span>
             </div>
             <div style={S('display:flex; align-items:center; gap:26px')}>
               <span style={S('font-size:14px; color:var(--muted); font-weight:500; cursor:pointer')}>Features</span>
@@ -1040,7 +1040,7 @@ export default class LearnFlow extends React.Component {
               <span style={S('width:11px;height:11px;border-radius:99px;background:#FF5F57')} />
               <span style={S('width:11px;height:11px;border-radius:99px;background:#FEBC2E')} />
               <span style={S('width:11px;height:11px;border-radius:99px;background:#28C840')} />
-              <span style={S("margin-left:14px; font-size:12px; color:var(--subtle); font-family:'JetBrains Mono',monospace")}>app.learnflow.ai/roadmap</span>
+              <span style={S("margin-left:14px; font-size:12px; color:var(--subtle); font-family:'JetBrains Mono',monospace")}>wintrail.vercel.app/roadmap</span>
             </div>
             <div style={S('padding:26px; display:grid; grid-template-columns:1.3fr 1fr; gap:20px; background:var(--bg)')}>
               <div style={S('border-radius:18px; background:var(--surface); border:1px solid var(--border); padding:22px; box-shadow:var(--shadow-sm)')}>
@@ -1157,7 +1157,7 @@ export default class LearnFlow extends React.Component {
           </div>
         </div>
         <div style={S('max-width:1180px; margin:0 auto; padding:46px 28px 60px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; color:var(--subtle); font-size:13px')}>
-          <span>© 2026 LearnFlow AI · Your Personal AI Learning Architect</span>
+          <span>© 2026 Wintrail · Your Personal AI Learning Architect</span>
           <span style={S('display:flex; gap:20px')}><span>Privacy</span><span>Terms</span><span>Security</span><span>Careers</span></span>
         </div>
       </div>
@@ -1170,7 +1170,7 @@ export default class LearnFlow extends React.Component {
         <div style={S('padding:22px 28px; display:flex; align-items:center; justify-content:space-between')}>
           <div style={S('display:flex; align-items:center; gap:11px')}>
             <div style={S('width:32px; height:32px; border-radius:9px; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center')}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7l8-4 8 4-8 4-8-4z" /><path d="M4 7v6l8 4 8-4V7" /></svg></div>
-            <span style={S('font-weight:800; font-size:16px')}>LearnFlow<span style={S('color:var(--blue)')}> AI</span></span>
+            <span style={S('font-weight:800; font-size:16px')}>Wintrail</span>
           </div>
           <button className="lf-btn" onClick={this.state.user || this.state.savedRoadmaps.length > 0 ? v.goTo.dashboard : v.goTo.landing} style={S('padding:8px 14px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-size:13px; font-weight:600; cursor:pointer')}>{this.state.user || this.state.savedRoadmaps.length > 0 ? '← Back' : 'Skip'}</button>
         </div>
@@ -1316,7 +1316,7 @@ export default class LearnFlow extends React.Component {
             <div style={S('width:38px; height:38px; border-radius:11px; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow)')}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7l8-4 8 4-8 4-8-4z" /><path d="M4 7v6l8 4 8-4V7" /></svg>
             </div>
-            <span style={S('font-weight:800; font-size:20px; letter-spacing:-.02em')}>LearnFlow<span style={S('color:var(--blue)')}> AI</span></span>
+            <span style={S('font-weight:800; font-size:20px; letter-spacing:-.02em')}>Wintrail</span>
           </div>
 
           {/* Card */}
@@ -1417,7 +1417,7 @@ export default class LearnFlow extends React.Component {
         <aside style={S('width:248px; flex:none; border-right:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; position:sticky; top:0; height:100vh')}>
           <div style={S('padding:22px 20px 16px; display:flex; align-items:center; gap:11px')}>
             <div style={S('width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm)')}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7l8-4 8 4-8 4-8-4z" /><path d="M4 7v6l8 4 8-4V7" /></svg></div>
-            <span style={S('font-weight:800; font-size:17px; letter-spacing:-.02em')}>LearnFlow<span style={S('color:var(--blue)')}> AI</span></span>
+            <span style={S('font-weight:800; font-size:17px; letter-spacing:-.02em')}>Wintrail</span>
           </div>
           <div className="lf-scroll" style={S('flex:1; overflow-y:auto; padding:8px 12px; display:flex; flex-direction:column; gap:2px')}>
             <div style={S('font-size:11px; font-weight:700; color:var(--subtle); letter-spacing:.08em; padding:12px 12px 6px')}>MENU</div>
@@ -1474,7 +1474,7 @@ export default class LearnFlow extends React.Component {
         <aside style={S('width:248px; flex:none; border-right:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; position:sticky; top:0; height:100vh')}>
           <div style={S('padding:22px 20px 16px; display:flex; align-items:center; gap:11px')}>
             <div style={S('width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center')}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7l8-4 8 4-8 4-8-4z" /><path d="M4 7v6l8 4 8-4V7" /></svg></div>
-            <span style={S('font-weight:800; font-size:17px')}>LearnFlow<span style={S('color:var(--blue)')}> AI</span></span>
+            <span style={S('font-weight:800; font-size:17px')}>Wintrail</span>
           </div>
           <div style={S('padding:12px')}><button className="lf-btn" onClick={v.newChat} style={S('width:100%; padding:11px; border-radius:12px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text); font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px; justify-content:center')}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>New conversation</button></div>
           <div className="lf-scroll" style={S('flex:1; overflow-y:auto; padding:8px 12px')}>
@@ -2653,7 +2653,7 @@ export default class LearnFlow extends React.Component {
       e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 } },
         e('div', {},
           e('div', { style: { fontSize: 24, fontWeight: 800, letterSpacing: '-.03em' } }, 'Mobile Experience'),
-          e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginTop: 3 } }, 'LearnFlow AI is a progressive web app — open it in any mobile browser for the full experience')),
+          e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginTop: 3 } }, 'Wintrail is a progressive web app — open it in any mobile browser for the full experience')),
         e('a', { href: window.location.origin, target: '_blank', rel: 'noreferrer', style: { display: 'inline-flex', alignItems: 'center', gap: 9, padding: '11px 18px', borderRadius: 13, background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14, textDecoration: 'none', boxShadow: 'var(--shadow)', flexShrink: 0 } },
           e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M7 3h10v18H7z M10 18h4' })),
           'Open on your phone')),
@@ -2733,7 +2733,8 @@ export default class LearnFlow extends React.Component {
         tab === 'library'   && this.buildNativeLibrary(),
         tab === 'goals'     && this.buildNativeGoals(),
         tab === 'more'      && this.buildNativeMore(),
-        tab === 'profile'   && this.buildNativeProfile()
+        tab === 'profile'   && this.buildNativeProfile(),
+        tab === 'about'     && this.buildNativeAbout()
       ),
       this.buildNativeTabBar(tab)
     )
@@ -2755,7 +2756,7 @@ export default class LearnFlow extends React.Component {
             e('path', { d: 'M4 7l8-4 8 4-8 4-8-4z' }), e('path', { d: 'M4 7v6l8 4 8-4V7' })
           )
         ),
-        e('div', { style: { fontSize: 26, fontWeight: 800, letterSpacing: '-.02em' } }, 'LearnFlow AI'),
+        e('div', { style: { fontSize: 26, fontWeight: 800, letterSpacing: '-.02em' } }, 'Wintrail'),
         e('div', { style: { fontSize: 14, color: 'var(--muted)', marginTop: 4 } }, 'Your AI learning architect')
       ),
       // Title
@@ -3205,7 +3206,7 @@ export default class LearnFlow extends React.Component {
       },
     ]
     // Highlight More tab when any sub-screen is active
-    const moreScreens = ['analytics', 'skilltree', 'library', 'goals', 'more', 'profile']
+    const moreScreens = ['analytics', 'skilltree', 'library', 'goals', 'more', 'profile', 'about']
     return e('div', { style: { flexShrink: 0, display: 'flex', borderTop: '1px solid var(--border)', background: 'var(--surface)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' } },
       tabs.map((t) => {
         const active = t.id === 'more' ? moreScreens.includes(currentTab) : currentTab === t.id
@@ -3285,7 +3286,117 @@ export default class LearnFlow extends React.Component {
             e('div', { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } }, name)
           )
         )
+      ),
+      e('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.08em', marginBottom: 8 } }, 'INFO'),
+      e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 20 } },
+        e('button', { onClick: () => { haptic(); this.setState({ mobileTab: 'about' }) }, style: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' } },
+          e('div', { style: { width: 40, height: 40, borderRadius: 13, background: 'rgba(37,99,235,.13)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } },
+            e('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--blue)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('circle', { cx: 12, cy: 12, r: 9 }), e('path', { d: 'M12 8v4' }), e('path', { d: 'M12 16h.01' }))
+          ),
+          e('div', { style: { flex: 1 } },
+            e('div', { style: { fontSize: 15, fontWeight: 600, color: 'var(--text)' } }, 'About Wintrail'),
+            e('div', { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } }, 'Version, licenses & support links')
+          ),
+          e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--subtle)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M9 18l6-6-6-6' }))
+        )
       )
+    )
+  }
+
+  // ── About screen ─────────────────────────────────────────────────────────────
+
+  buildNativeAbout() {
+    const platform = (typeof window !== 'undefined' && window.Capacitor?.getPlatform?.()) || 'web'
+    const platformLabel = platform === 'ios' ? 'iOS' : platform === 'android' ? 'Android' : 'Web'
+
+    const backHeader = e('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 } },
+      e('button', { onClick: () => { haptic(); this.setState({ mobileTab: 'more' }) }, style: { width: 36, height: 36, borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' } },
+        e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M19 12H5M12 19l-7-7 7-7' }))
+      ),
+      e('div', { style: { fontSize: 20, fontWeight: 800, letterSpacing: '-.02em' } }, 'About Wintrail')
+    )
+
+    const linkRow = (label, url) =>
+      e('button', { key: label, onClick: () => window.open(url, '_system'), style: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' } },
+        e('div', { style: { flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' } }, label),
+        e('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+          e('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
+          e('polyline', { points: '15 3 21 3 21 9' }),
+          e('line', { x1: 10, y1: 14, x2: 21, y2: 3 })
+        )
+      )
+
+    const infoRow = (label, value) =>
+      e('div', { key: label, style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 16px', borderBottom: '1px solid var(--border)' } },
+        e('span', { style: { fontSize: 14.5, color: 'var(--muted)' } }, label),
+        e('span', { style: { fontSize: 14.5, fontWeight: 600, color: 'var(--text)' } }, value)
+      )
+
+    return e('div', { style: { padding: '0 20px 40px' } },
+      backHeader,
+
+      // App identity hero
+      e('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--border)' } },
+        e('div', { style: { width: 80, height: 80, borderRadius: 24, background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14, boxShadow: '0 8px 28px rgba(37,99,235,.35)' } },
+          e('span', { style: { fontSize: 36, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' } }, 'W')
+        ),
+        e('div', { style: { fontSize: 28, fontWeight: 800, letterSpacing: '-.03em' } }, 'Wintrail'),
+        e('div', { style: { fontSize: 14, color: 'var(--muted)', marginTop: 4, marginBottom: 10 } }, 'Your Personal AI Learning Architect'),
+        e('div', { style: { padding: '5px 14px', borderRadius: 99, background: 'var(--blue-soft)', border: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--blue-ink)' } }, 'V1.0 (Build 1)')
+      ),
+
+      // INFO section
+      e('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.08em', marginBottom: 8 } }, 'INFO'),
+      e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 20 } },
+        infoRow('Developer', 'Sanjay Krishnan JV'),
+        infoRow('Version', 'V1.0'),
+        infoRow('Build', '1'),
+        e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 16px' } },
+          e('span', { style: { fontSize: 14.5, color: 'var(--muted)' } }, 'Platform'),
+          e('span', { style: { fontSize: 14.5, fontWeight: 600, color: 'var(--text)' } }, platformLabel)
+        )
+      ),
+
+      // LINKS section
+      e('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.08em', marginBottom: 8 } }, 'LINKS'),
+      e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 20 } },
+        linkRow('Privacy Policy', 'https://learnflow-ai-two.vercel.app/privacy.html'),
+        linkRow('Terms & Conditions', 'https://learnflow-ai-two.vercel.app/terms.html'),
+        linkRow('Support', 'https://learnflow-ai-two.vercel.app/support.html'),
+        e('button', { onClick: () => window.open('https://wintrail.vercel.app', '_system'), style: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' } },
+          e('div', { style: { flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' } }, 'Website'),
+          e('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+            e('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
+            e('polyline', { points: '15 3 21 3 21 9' }),
+            e('line', { x1: 10, y1: 14, x2: 21, y2: 3 })
+          )
+        )
+      ),
+
+      // POWERED BY section
+      e('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.08em', marginBottom: 8 } }, 'POWERED BY'),
+      e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 28 } },
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid var(--border)' } },
+          e('div', { style: { width: 36, height: 36, borderRadius: 10, background: 'rgba(251,146,60,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } },
+            e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: '#FB923C', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1' }))
+          ),
+          e('div', { style: { flex: 1 } },
+            e('div', { style: { fontSize: 14.5, fontWeight: 600 } }, 'Groq AI (Llama 3.3 70B)'),
+            e('div', { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } }, 'AI mentor & roadmap generation')
+          )
+        ),
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' } },
+          e('div', { style: { width: 36, height: 36, borderRadius: 10, background: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } },
+            e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--emerald)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('ellipse', { cx: 12, cy: 5, rx: 9, ry: 3 }), e('path', { d: 'M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5' }), e('path', { d: 'M3 12c0 1.66 4 3 9 3s9-1.34 9-3' }))
+          ),
+          e('div', { style: { flex: 1 } },
+            e('div', { style: { fontSize: 14.5, fontWeight: 600 } }, 'Supabase'),
+            e('div', { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } }, 'Secure cloud storage')
+          )
+        )
+      ),
+
+      e('div', { style: { textAlign: 'center', fontSize: 12, color: 'var(--subtle)' } }, '© 2026 Sanjay Krishnan JV. All rights reserved.')
     )
   }
 

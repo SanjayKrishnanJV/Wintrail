@@ -44,7 +44,7 @@
   </g>
 
   <!-- App name -->
-  <text x="1366" y="2140" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="200" font-weight="800" fill="white" text-anchor="middle" letter-spacing="-4">LearnFlow</text>
+  <text x="1366" y="2140" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="200" font-weight="800" fill="white" text-anchor="middle" letter-spacing="-4">Wintrail</text>
   <text x="1366" y="2340" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="100" font-weight="500" fill="#60A5FA" text-anchor="middle" letter-spacing="24">AI</text>
 
   <!-- Tagline -->

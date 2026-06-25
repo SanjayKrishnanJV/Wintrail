@@ -41,6 +41,6 @@
   <line x1="420" y1="620" x2="604" y2="620" stroke="#60A5FA" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
 
   <!-- "LF" wordmark at bottom -->
-  <text x="512" y="870" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="96" font-weight="800" fill="white" text-anchor="middle" letter-spacing="-2">LearnFlow</text>
+  <text x="512" y="870" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="96" font-weight="800" fill="white" text-anchor="middle" letter-spacing="-2">Wintrail</text>
   <text x="512" y="950" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="46" font-weight="500" fill="#60A5FA" text-anchor="middle" letter-spacing="8">AI</text>
 </svg>

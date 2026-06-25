@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">LearnFlow AI</string>
-    <string name="title_activity_main">LearnFlow AI</string>
-    <string name="package_name">com.learnflowai.app</string>
-    <string name="custom_url_scheme">com.learnflowai.app</string>
+    <string name="app_name">Wintrail</string>
+    <string name="title_activity_main">Wintrail</string>
+    <string name="package_name">com.wintrail.app</string>
+    <string name="custom_url_scheme">com.wintrail.app</string>
 </resources>

@@ -40,10 +40,15 @@ export default class LearnFlow extends React.Component {
     plannerItems: {},            // { 'YYYY-MM-DD': [{id,t,time,c,soft}] }
     kanbanCards: null,           // null=auto-gen; {todo:[],inprogress:[],done:[]}
     expandedSkillPhases: { 0: true },  // phase idx → expanded bool
-    plannerAddDay: null,         // date string for inline week add form
-    plannerAddCol: null,         // kanban col for inline add form
+    plannerAddDay: null,
+    plannerAddCol: null,
     plannerAddText: '',
     plannerAddTime: '09:00',
+    mentorSuggestDismissed: false,
+    searchQuery: '',
+    customGoals: [],      // user-created goals [{id,t,pct,c,soft,due,status}]
+    addingGoal: false,
+    addGoalText: '',
     progress: { streak: 0, hoursStudied: 0, lastDate: null, dates: [], phaseProgress: {} },
     userName: '',
     user: null,
@@ -98,7 +103,13 @@ export default class LearnFlow extends React.Component {
         if (saved.roadmap) patch.roadmap = saved.roadmap
         if (saved.chatMsgs && saved.chatMsgs.length) patch.chatMsgs = saved.chatMsgs
         if (saved.obData && saved.obData.topic) { patch.obData = saved.obData; patch.obPhase = 'done' }
-        if (saved.tasks) patch.tasks = saved.tasks
+        if (saved.tasks) {
+          const todayIso = new Date().toISOString().slice(0, 10)
+          // New day → reset done flags so tasks feel fresh each morning
+          patch.tasks = saved.progress?.lastDate !== todayIso
+            ? saved.tasks.map((t) => ({ ...t, done: false }))
+            : saved.tasks
+        }
         if (saved.progress) patch.progress = { ...{ streak: 0, hoursStudied: 0, lastDate: null, dates: [], phaseProgress: {} }, ...saved.progress }
         if (saved.userName) patch.userName = saved.userName
         if (saved.settings) patch.settings = { ...this.state.settings, ...saved.settings }
@@ -106,6 +117,7 @@ export default class LearnFlow extends React.Component {
         if (saved.plannerItems && typeof saved.plannerItems === 'object') patch.plannerItems = saved.plannerItems
         if (saved.kanbanCards) patch.kanbanCards = saved.kanbanCards
         if (saved.expandedSkillPhases) patch.expandedSkillPhases = saved.expandedSkillPhases
+        if (Array.isArray(saved.customGoals)) patch.customGoals = saved.customGoals
         if (saved.screen && !['landing', 'onboarding', 'auth'].includes(saved.screen)) patch.screen = saved.screen
         if (Object.keys(patch).length) this.setState(patch)
       }
@@ -116,8 +128,8 @@ export default class LearnFlow extends React.Component {
     if (this._saveTimer) clearTimeout(this._saveTimer)
     this._saveTimer = setTimeout(() => {
       try {
-        const { theme, roadmap, savedRoadmaps, chatMsgs, obData, screen, tasks, progress, userName, settings, plannerItems, kanbanCards, expandedSkillPhases } = this.state
-        localStorage.setItem('lf_state', JSON.stringify({ theme, roadmap, savedRoadmaps, chatMsgs, obData, screen, tasks, progress, userName, settings, plannerItems, kanbanCards, expandedSkillPhases }))
+        const { theme, roadmap, savedRoadmaps, chatMsgs, obData, screen, tasks, progress, userName, settings, plannerItems, kanbanCards, expandedSkillPhases, customGoals } = this.state
+        localStorage.setItem('lf_state', JSON.stringify({ theme, roadmap, savedRoadmaps, chatMsgs, obData, screen, tasks, progress, userName, settings, plannerItems, kanbanCards, expandedSkillPhases, customGoals }))
       } catch { /* ignore */ }
     }, 300)
     // Debounced Supabase sync (1 s) when logged in
@@ -419,6 +431,45 @@ export default class LearnFlow extends React.Component {
     this.setState((s) => ({ expandedSkillPhases: { ...s.expandedSkillPhases, [idx]: !s.expandedSkillPhases[idx] } }))
   }
 
+  // ---------- ACTIONS ----------
+  doWeeklyReview() {
+    const rm = this.state.roadmap
+    const msg = rm
+      ? `Generate my weekly learning review for "${rm.headline}". Cover: what I completed this week, my current phase progress (${this._phasePct(this._currentPhaseIdx())}%), streak (${this.state.progress.streak} days), time invested (${parseFloat(this.state.progress.hoursStudied.toFixed(1))}h), upcoming milestones, and 3 specific recommendations for next week.`
+      : 'Generate my weekly learning review. Summarize my progress and give me 3 recommendations for next week.'
+    this.setState({ screen: 'mentor' })
+    setTimeout(() => this.doSend(msg), 200)
+  }
+
+  doReschedule() {
+    const rm = this.state.roadmap
+    const msg = rm
+      ? `Based on my ${rm.headline} roadmap and my current streak of ${this.state.progress.streak} days, suggest an optimal study schedule for next week. Account for my availability of ${rm.hoursPerDay}/day.`
+      : 'Help me reschedule my study sessions for next week based on my learning goals.'
+    this.setState({ screen: 'mentor' })
+    setTimeout(() => this.doSend(msg), 200)
+  }
+
+  exportData() {
+    const { roadmap, savedRoadmaps, tasks, progress, userName, plannerItems, kanbanCards, customGoals, obData } = this.state
+    const payload = { userName, obData, roadmap, savedRoadmaps, tasks, progress, plannerItems, kanbanCards, customGoals, exportedAt: new Date().toISOString() }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url; a.download = 'learnflow-export.json'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  addCustomGoal() {
+    const t = this.state.addGoalText.trim()
+    if (!t) { this.setState({ addingGoal: false }); return }
+    const goal = { id: Date.now().toString(), t, pct: 0, c: 'var(--blue)', soft: 'var(--blue-soft)', due: 'No deadline', status: 'In progress' }
+    this.setState((s) => ({ customGoals: [...s.customGoals, goal], addingGoal: false, addGoalText: '' }))
+  }
+
+  updateGoalPct(id, pct) {
+    this.setState((s) => ({ customGoals: s.customGoals.map((g) => g.id === id ? { ...g, pct, status: pct === 100 ? 'Completed' : 'In progress' } : g) }))
+  }
+
   freshOnboarding() {
     return () => this.setState({
       screen: 'onboarding',
@@ -454,6 +505,7 @@ export default class LearnFlow extends React.Component {
         if (data.planner_items && typeof data.planner_items === 'object') patch.plannerItems = data.planner_items
         if (data.kanban_cards) patch.kanbanCards = data.kanban_cards
         if (data.expanded_skill_phases) patch.expandedSkillPhases = data.expanded_skill_phases
+        if (Array.isArray(data.custom_goals)) patch.customGoals = data.custom_goals
         this.setState(patch)
       } else {
         this.setState({ screen: 'onboarding' })
@@ -473,6 +525,7 @@ export default class LearnFlow extends React.Component {
         planner_items: plannerItems,
         kanban_cards: kanbanCards,
         expanded_skill_phases: expandedSkillPhases,
+        custom_goals: this.state.customGoals,
         user_name: userName,
         ob_data: obData,
         chat_msgs: chatMsgs,
@@ -1121,7 +1174,7 @@ export default class LearnFlow extends React.Component {
             <div style={S('font-size:18px; font-weight:700; letter-spacing:-.02em')}>{v.screenTitle}</div>
             <div style={S('flex:1; max-width:420px; margin-left:14px; position:relative')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" strokeWidth="2" strokeLinecap="round" style={S('position:absolute; left:14px; top:50%; transform:translateY(-50%)')}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-              <input placeholder="Search skills, courses, resources…" style={S('width:100%; padding:9px 14px 9px 38px; border-radius:11px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:14px; outline:none')} />
+              <input value={this.state.searchQuery} onChange={(ev) => this.setState({ searchQuery: ev.target.value })} onFocus={() => { if (!['library','goals'].includes(this.state.screen)) this.setState({ screen: 'library' }) }} placeholder="Search skills, courses, resources…" style={S('width:100%; padding:9px 14px 9px 38px; border-radius:11px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:14px; outline:none')} />
             </div>
             <div style={S('margin-left:auto; display:flex; align-items:center; gap:10px')}>
               <button className="lf-btn" onClick={v.goTo.mentor} style={S('padding:9px 15px; border-radius:11px; border:none; background:linear-gradient(135deg,var(--blue),var(--violet)); color:#fff; font-weight:600; font-size:13.5px; cursor:pointer; display:flex; align-items:center; gap:7px')}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" /></svg>Ask Mentor</button>
@@ -1298,7 +1351,7 @@ export default class LearnFlow extends React.Component {
         e('div', {},
           e('div', { style: { fontSize: 26, fontWeight: 800, letterSpacing: '-.03em' } }, greetText),
           e('div', { style: { fontSize: 15, color: 'var(--muted)', marginTop: 4 } }, greetSub)),
-        e('button', { className: 'lf-btn', onClick: this.go('mentor'), style: { padding: '11px 18px', borderRadius: 12, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontWeight: 600, fontSize: 14, cursor: 'pointer' } }, 'Generate weekly review')
+        e('button', { className: 'lf-btn', onClick: () => this.doWeeklyReview(), style: { padding: '11px 18px', borderRadius: 12, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontWeight: 600, fontSize: 14, cursor: 'pointer' } }, 'Generate weekly review')
       ),
       e('div', { style: { display: 'grid', gridTemplateColumns: '1.15fr 1fr 1fr 1fr', gap: 16 } },
         e('div', { style: { borderRadius: 20, padding: 22, background: 'linear-gradient(150deg,var(--blue),var(--violet))', color: '#fff', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', gap: 18 } },
@@ -1370,15 +1423,15 @@ export default class LearnFlow extends React.Component {
                   e('span', { style: { flex: 1, fontSize: 14, fontWeight: 500, textDecoration: task.done ? 'line-through' : 'none', color: task.done ? 'var(--subtle)' : 'var(--text)', transition: 'all .2s' } }, task.t),
                   e('span', { style: { fontSize: 12, color: 'var(--subtle)', fontWeight: 600 } }, task.d)))),
           ),
-          e('div', { style: { borderRadius: 20, padding: 22, background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)', position: 'relative', overflow: 'hidden' } },
+          !this.state.mentorSuggestDismissed && e('div', { style: { borderRadius: 20, padding: 22, background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)', position: 'relative', overflow: 'hidden' } },
             e('div', { style: { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 13 } },
               e('div', { style: { width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
                 e('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1' }))),
               e('span', { style: { fontSize: 14, fontWeight: 700 } }, 'Mentor AI suggests')),
             e('div', { style: { fontSize: 14.5, lineHeight: 1.55, color: 'var(--text)', marginBottom: 16 } }, rm && rm.watchAreas && rm.watchAreas[0] ? rm.watchAreas[0] : 'Generate your roadmap to get personalised Mentor AI suggestions based on your learning track.'),
             e('div', { style: { display: 'flex', gap: 9 } },
-              e('button', { className: 'lf-btn', style: { flex: 1, padding: '10px', borderRadius: 11, border: 'none', background: 'var(--blue)', color: '#fff', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Reschedule'),
-              e('button', { className: 'lf-btn', style: { padding: '10px 14px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--muted)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Dismiss')))
+              e('button', { className: 'lf-btn', onClick: () => this.doReschedule(), style: { flex: 1, padding: '10px', borderRadius: 11, border: 'none', background: 'var(--blue)', color: '#fff', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Ask Mentor to reschedule'),
+              e('button', { className: 'lf-btn', onClick: () => this.setState({ mentorSuggestDismissed: true }), style: { padding: '10px 14px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--muted)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Dismiss')))
         )
       ),
       e('div', { style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', padding: 22, boxShadow: 'var(--shadow-sm)' } },
@@ -1981,7 +2034,8 @@ export default class LearnFlow extends React.Component {
       })
     })
     const filters = ['All', 'Course', 'Project']
-    const shown = filt === 'All' ? allItems : allItems.filter((i) => i.type === filt)
+    const q = (this.state.searchQuery || '').toLowerCase()
+    const shown = allItems.filter((i) => (filt === 'All' || i.type === filt) && (!q || i.t.toLowerCase().includes(q) || (i.src || '').toLowerCase().includes(q) || (i.tags || []).some((tg) => tg && tg.toLowerCase().includes(q))))
     const typeIcon = { Course: 'M6 4h10v16H8a2 2 0 0 0-2 2zM6 4v18', Project: 'M3 7h18M3 7l2 13h14l2-13M9 11v5M15 11v5' }
 
     // Detail popup modal
@@ -2077,13 +2131,26 @@ export default class LearnFlow extends React.Component {
     // Timeline from milestones
     const timeline = milestones.map((m, i) => ({ t: m.t, d: m.d, c: palette[i % palette.length].color, future: i > 0 && (phases[0]?.pct || 0) < 50 }))
 
+    const allGoals = [...(this.state.customGoals || []).map((g) => ({ ...g, isCustom: true })), ...goals]
+
     return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 18 } },
       e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 } },
         e('div', {}, e('div', { style: { fontSize: 24, fontWeight: 800, letterSpacing: '-.03em' } }, 'Goals & Milestones'),
-          e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginTop: 3 } }, achievements.filter((a) => a.done).length + ' achievements unlocked · ' + milestones.length + ' milestones')),
-        e('button', { className: 'lf-btn', onClick: this.go('roadmap'), style: { padding: '10px 16px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'View roadmap')),
+          e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginTop: 3 } }, achievements.filter((a) => a.done).length + ' achievements unlocked · ' + allGoals.length + ' goals')),
+        e('div', { style: { display: 'flex', gap: 10 } },
+          e('button', { className: 'lf-btn', onClick: this.go('roadmap'), style: { padding: '10px 16px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'View roadmap'),
+          e('button', { className: 'lf-btn', onClick: () => this.setState({ addingGoal: true, addGoalText: '' }), style: { padding: '10px 16px', borderRadius: 11, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 } },
+            e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.5, strokeLinecap: 'round' }, e('path', { d: 'M12 5v14M5 12h14' })), 'New goal'))),
+
+      // Add goal form
+      this.state.addingGoal && e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1.5px solid var(--blue)', padding: 20, display: 'flex', gap: 10, alignItems: 'center', boxShadow: 'var(--shadow-sm)' } },
+        e('input', { value: this.state.addGoalText, onChange: (ev) => this.setState({ addGoalText: ev.target.value }), onKeyDown: (ev) => { if (ev.key === 'Enter') this.addCustomGoal(); if (ev.key === 'Escape') this.setState({ addingGoal: false }) }, placeholder: 'What do you want to achieve? e.g. "Complete AZ-104 by October"', autoFocus: true, style: { flex: 1, border: 'none', background: 'transparent', color: 'var(--text)', fontSize: 15, fontFamily: 'inherit', outline: 'none' } }),
+        e('button', { className: 'lf-btn', onClick: () => this.addCustomGoal(), style: { padding: '9px 16px', borderRadius: 10, border: 'none', background: 'var(--blue)', color: '#fff', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Add'),
+        e('button', { className: 'lf-btn', onClick: () => this.setState({ addingGoal: false }), style: { padding: '9px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--muted)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Cancel')),
+
       e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16 } },
-        goals.map((g, i) => { const rr = this.ring(g.pct, 26); return e('div', { key: i, className: 'lf-card-h', style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', padding: 22, boxShadow: 'var(--shadow-sm)' } },
+        allGoals.map((g, i) => { const rr = this.ring(g.pct, 26); return e('div', { key: g.id || i, className: 'lf-card-h', style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', padding: 22, boxShadow: 'var(--shadow-sm)', position: 'relative' } },
+          g.isCustom && e('button', { onClick: () => this.setState((s) => ({ customGoals: s.customGoals.filter((c) => c.id !== g.id) })), style: { position: 'absolute', top: 12, right: 14, fontSize: 16, color: 'var(--subtle)', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 } }, '×'),
           e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 } },
             e('span', { style: { fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 99, background: g.soft, color: g.c } }, g.status),
             e('div', { style: { position: 'relative', width: 64, height: 64 } },
@@ -2092,9 +2159,11 @@ export default class LearnFlow extends React.Component {
                 e('circle', { cx: 32, cy: 32, r: 26, fill: 'none', stroke: g.c, strokeWidth: 7, strokeLinecap: 'round', strokeDasharray: rr.c, strokeDashoffset: rr.off })),
               e('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800 } }, g.pct + '%'))),
           e('div', { style: { fontSize: 16, fontWeight: 700, lineHeight: 1.3, marginBottom: 5 } }, g.t),
-          e('div', { style: { fontSize: 13.5, color: 'var(--muted)', marginBottom: 14 } }, g.sub),
-          e('div', { style: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: 'var(--muted)', fontWeight: 500 } },
-            e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M12 6v6l4 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z' })), g.due)) })),
+          e('div', { style: { fontSize: 13.5, color: 'var(--muted)', marginBottom: 14 } }, g.sub || g.due),
+          g.isCustom
+            ? e('input', { type: 'range', min: 0, max: 100, value: g.pct, onChange: (ev) => this.updateGoalPct(g.id, Number(ev.target.value)), style: { width: '100%', accentColor: g.c, cursor: 'pointer' } })
+            : e('div', { style: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: 'var(--muted)', fontWeight: 500 } },
+                e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M12 6v6l4 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z' })), g.due)) })),
       e('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 } },
         e('div', { style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', padding: 22, boxShadow: 'var(--shadow-sm)' } },
           e('div', { style: { fontSize: 16, fontWeight: 700, marginBottom: 18 } }, 'Milestone Timeline'),
@@ -2177,8 +2246,8 @@ export default class LearnFlow extends React.Component {
       e('div', { style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', padding: '8px 24px 20px', boxShadow: 'var(--shadow-sm)' } },
         e('div', { style: { fontSize: 15, fontWeight: 700, padding: '16px 0 8px' } }, 'Account'),
         e('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 } },
-          e('button', { className: 'lf-btn', style: { padding: '10px 16px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Export my data'),
-          e('button', { className: 'lf-btn', style: { padding: '10px 16px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Manage subscription'),
+          e('button', { className: 'lf-btn', onClick: () => this.exportData(), style: { padding: '10px 16px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Export my data'),
+          e('span', { style: { padding: '10px 16px', borderRadius: 11, border: '1px solid var(--emerald)', background: 'var(--emerald-soft)', color: 'var(--emerald)', fontWeight: 600, fontSize: 13.5, display: 'inline-flex', alignItems: 'center', gap: 6 } }, '✓ Free forever — no subscription needed'),
           e('button', { className: 'lf-btn', onClick: () => this.doSignOut(), style: { padding: '10px 16px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)', color: '#EF4444', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, this.state.user ? 'Sign out' : 'Reset & start over')))
     )
   }

@@ -2405,17 +2405,27 @@ export default class LearnFlow extends React.Component {
     const mobName = this.state.userName || (this.state.user ? this.state.user.email.split('@')[0] : 'there')
     const mobScore = Math.min(999, Math.round(mobProgress.hoursStudied * 100 + mobTasks.filter((t) => t.done).length * 50))
     const mobScorePct = Math.min(100, Math.round(mobProgress.hoursStudied * 10 + mobTasks.filter((t) => t.done).length * 5))
-    const mobPhases = mobRm ? (mobRm.phases || []).map((p, i) => [String(p.n), p.title, p.cert, p.pct, LearnFlow.PHASE_COLORS[i % LearnFlow.PHASE_COLORS.length].color]) : []
+    // Use _phasePct() so phases show real tracked progress, not the static server value
+    const mobPhases = mobRm ? (mobRm.phases || []).map((p, i) => [String(p.n), p.title, p.cert, this._phasePct(i), LearnFlow.PHASE_COLORS[i % LearnFlow.PHASE_COLORS.length].color]) : []
     const mobOverallPct = mobPhases.length ? Math.round(mobPhases.reduce((a, p) => a + p[3], 0) / mobPhases.length) : 0
-    const mobCurPhase = mobRm ? (mobRm.phases || []).find((p) => p.status === 'In progress') || mobRm.phases?.[0] : null
-    const mobMentorMsg = mobRm && mobCurPhase
-      ? `Focus on ${mobCurPhase.title} — ${mobCurPhase.pct}% complete. ${mobCurPhase.sub}`
+    const mobCurPhaseObj = mobRm ? mobRm.phases?.[this._currentPhaseIdx()] : null
+    const mobCurPhasePct = mobCurPhaseObj ? this._phasePct(this._currentPhaseIdx()) : 0
+    const mobMentorMsg = mobRm && mobCurPhaseObj
+      ? `Focus on ${mobCurPhaseObj.title} — ${mobCurPhasePct}% complete. ${mobCurPhaseObj.sub}`
       : 'Generate your roadmap to get personalised daily guidance from Mentor AI.'
     const mobPlannerDayName = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
     const mobPlannerTasks = mobRm ? mobTasks.slice(0, 3).map((t, i) => [['9:00', '13:00', '19:00'][i], t.t, 'var(--blue)', 'var(--blue-soft)']) : []
+    const mobMilestones = mobRm ? (mobRm.milestones || []).slice(0, 3) : []
+    // Time-aware greeting
+    const hr = new Date().getHours()
+    const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
+    // Real last chat message if available
+    const lastChat = this.state.chatMsgs.length >= 2
+      ? { user: this.state.chatMsgs.findLast((m) => m.role === 'user')?.text || 'What should I focus on today?', ai: this.state.chatMsgs.findLast((m) => m.role === 'ai')?.text || mobMentorMsg }
+      : { user: 'What should I focus on today?', ai: mobMentorMsg }
 
     const home = e('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-      e('div', { style: { paddingTop: 6 } }, e('div', { style: { fontSize: 13, color: 'var(--muted)' } }, 'Good morning'), e('div', { style: { fontSize: 22, fontWeight: 800, letterSpacing: '-.02em' } }, mobName + ' 👋')),
+      e('div', { style: { paddingTop: 6 } }, e('div', { style: { fontSize: 13, color: 'var(--muted)' } }, greeting), e('div', { style: { fontSize: 22, fontWeight: 800, letterSpacing: '-.02em' } }, mobName + ' 👋')),
       e('div', { style: { borderRadius: 18, padding: 18, background: 'linear-gradient(150deg,var(--blue),var(--violet))', color: '#fff', display: 'flex', alignItems: 'center', gap: 14 } },
         e('div', { style: { position: 'relative', width: 72, height: 72, flex: 'none' } },
           e('svg', { width: 72, height: 72, viewBox: '0 0 80 80', style: { transform: 'rotate(-90deg)' } }, e('circle', { cx: 40, cy: 40, r: 30, fill: 'none', stroke: 'rgba(255,255,255,.25)', strokeWidth: 8 }), e('circle', { cx: 40, cy: 40, r: 30, fill: 'none', stroke: '#fff', strokeWidth: 8, strokeLinecap: 'round', strokeDasharray: 2 * Math.PI * 30, strokeDashoffset: 2 * Math.PI * 30 * (1 - mobScorePct / 100) })),
@@ -2444,27 +2454,43 @@ export default class LearnFlow extends React.Component {
               e('div', { style: { height: 5, borderRadius: 99, background: 'var(--surface-3)', marginTop: 8, overflow: 'hidden' } }, e('div', { style: { height: '100%', width: p[3] + '%', borderRadius: 99, background: p[4] } })))))
         : e('div', { style: { textAlign: 'center', padding: '20px 0', fontSize: 13, color: 'var(--muted)' } }, 'Build your roadmap to see phases here.'))
     const mentor = e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 8 } },
-      e('div', { style: { display: 'flex', justifyContent: 'flex-end' } }, e('div', { style: { maxWidth: '80%', padding: '10px 13px', borderRadius: '16px 16px 4px 16px', background: 'var(--blue)', color: '#fff', fontSize: 13 } }, 'What should I focus on today?')),
+      e('div', { style: { display: 'flex', justifyContent: 'flex-end' } },
+        e('div', { style: { maxWidth: '80%', padding: '10px 13px', borderRadius: '16px 16px 4px 16px', background: 'var(--blue)', color: '#fff', fontSize: 13 } }, lastChat.user)),
       e('div', { style: { display: 'flex', gap: 9 } },
-        e('div', { style: { width: 26, height: 26, flex: 'none', borderRadius: 8, background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2 }, e('path', { d: 'M12 3v3M12 18v3M3 12h3M18 12h3' }))),
-        e('div', { style: { flex: 1 } }, e('div', { style: { fontSize: 13, lineHeight: 1.5 } }, mobMentorMsg),
+        e('div', { style: { width: 26, height: 26, flex: 'none', borderRadius: 8, background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+          e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2 }, e('path', { d: 'M12 3v3M12 18v3M3 12h3M18 12h3' }))),
+        e('div', { style: { flex: 1 } },
+          e('div', { style: { fontSize: 13, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' } }, lastChat.ai),
           e('div', { style: { marginTop: 10, padding: '9px 11px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface)' } },
             e('div', { style: { fontSize: 9.5, fontWeight: 700, color: 'var(--subtle)', letterSpacing: '.05em', marginBottom: 3 } }, 'SOURCE'),
-            e('div', { style: { fontSize: 11.5, fontWeight: 600 } }, mobRm ? 'Your roadmap · ' + (mobCurPhase?.title || 'Phase 1') : 'Mentor AI')))),
+            e('div', { style: { fontSize: 11.5, fontWeight: 600 } }, mobRm ? 'Your roadmap · ' + (mobCurPhaseObj?.title || 'Phase 1') : 'Mentor AI')))),
       e('div', { style: { marginTop: 'auto', display: 'flex', gap: 8, padding: '8px 8px 8px 14px', border: '1.5px solid var(--border-strong)', borderRadius: 14, background: 'var(--surface)' } },
         e('span', { style: { flex: 1, fontSize: 12.5, color: 'var(--subtle)', alignSelf: 'center' } }, 'Ask Mentor AI…'),
-        e('div', { style: { width: 30, height: 30, borderRadius: 9, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, e('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M5 12h14M13 6l6 6-6 6' })))))
+        e('div', { style: { width: 30, height: 30, borderRadius: 9, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+          e('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M5 12h14M13 6l6 6-6 6' })))))
     const planner = e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 6 } },
-      e('div', {}, e('div', { style: { fontSize: 20, fontWeight: 800, letterSpacing: '-.02em' } }, mobPlannerDayName), e('div', { style: { fontSize: 12.5, color: 'var(--blue)', fontWeight: 600, marginTop: 2 } }, mobPlannerTasks.length + ' sessions scheduled')),
+      e('div', {}, e('div', { style: { fontSize: 20, fontWeight: 800, letterSpacing: '-.02em' } }, mobPlannerDayName), e('div', { style: { fontSize: 12.5, color: 'var(--blue)', fontWeight: 600, marginTop: 2 } }, mobPlannerTasks.length + ' sessions today')),
       mobPlannerTasks.length > 0
         ? mobPlannerTasks.map((s, i) => e('div', { key: i, style: { display: 'flex', gap: 12 } },
             e('div', { style: { width: 42, fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', paddingTop: 11, flex: 'none' } }, s[0]),
             e('div', { style: { flex: 1, padding: '11px 13px', borderRadius: 13, background: s[3], borderLeft: '3px solid ' + s[2] } }, e('div', { style: { fontSize: 13.5, fontWeight: 600 } }, s[1]))))
         : e('div', { style: { textAlign: 'center', padding: '20px 0', fontSize: 13, color: 'var(--muted)' } }, 'No sessions yet — generate your roadmap first.'),
-      e('div', { style: { marginTop: 8, padding: '12px', borderRadius: 13, border: '1.5px dashed var(--border-strong)', textAlign: 'center', fontSize: 12.5, color: 'var(--muted)', fontWeight: 600 } }, '+ Add study session'))
-    return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 18 } },
-      e('div', {}, e('div', { style: { fontSize: 24, fontWeight: 800, letterSpacing: '-.03em' } }, 'Mobile App'),
-        e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginTop: 3 } }, 'LearnFlow AI in your pocket — designed for one-handed use')),
+      mobMilestones.length > 0 && e('div', { style: { marginTop: 4, padding: '12px 14px', borderRadius: 13, background: 'var(--amber-soft)', border: '1px solid var(--border)' } },
+        e('div', { style: { fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.05em', marginBottom: 6 } }, 'UPCOMING MILESTONES'),
+        mobMilestones.map((m, i) => e('div', { key: i, style: { display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, marginBottom: i < mobMilestones.length - 1 ? 5 : 0 } },
+          e('span', {}, m.t), e('span', { style: { color: 'var(--muted)' } }, m.d)))),
+      e('div', { style: { marginTop: 4, padding: '12px', borderRadius: 13, border: '1.5px dashed var(--border-strong)', textAlign: 'center', fontSize: 12.5, color: 'var(--muted)', fontWeight: 600 } }, '+ Add study session'))
+    return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 22 } },
+      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 } },
+        e('div', {},
+          e('div', { style: { fontSize: 24, fontWeight: 800, letterSpacing: '-.03em' } }, 'Mobile Experience'),
+          e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginTop: 3 } }, 'LearnFlow AI is a progressive web app — open it in any mobile browser for the full experience')),
+        e('a', { href: window.location.origin, target: '_blank', rel: 'noreferrer', style: { display: 'inline-flex', alignItems: 'center', gap: 9, padding: '11px 18px', borderRadius: 13, background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14, textDecoration: 'none', boxShadow: 'var(--shadow)', flexShrink: 0 } },
+          e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M7 3h10v18H7z M10 18h4' })),
+          'Open on your phone')),
+      e('div', { style: { display: 'flex', gap: 16, padding: '14px 20px', borderRadius: 16, background: 'var(--blue-soft)', border: '1px solid var(--border)', alignItems: 'center', flexWrap: 'wrap' } },
+        e('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z' }), e('path', { d: 'M12 8v4l2 2' })),
+        e('span', { style: { fontSize: 14, color: 'var(--text)', flex: 1 } }, e('b', {}, 'How to install: '), 'Open ', e('b', {}, window.location.origin), ' on your phone → tap Share → "Add to Home Screen". Works on iPhone (Safari) and Android (Chrome).')),
       e('div', { style: { display: 'flex', gap: 32, flexWrap: 'wrap' } },
         this.phone('Home', home, 0),
         this.phone('Roadmap', roadmap, 1),

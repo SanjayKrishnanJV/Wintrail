@@ -637,7 +637,9 @@ export default class LearnFlow extends React.Component {
         // Merge Supabase data over what's already in state (from localStorage restore).
         // Only overwrite fields that actually exist in the cloud record.
         const patch = {}
-        if (data.roadmap) patch.roadmap = data.roadmap
+        // Always apply these from DB — null/[] means the user cleared them on another device
+        patch.roadmap = data.roadmap ?? null
+        patch.savedRoadmaps = Array.isArray(data.saved_roadmaps) ? data.saved_roadmaps : []
         if (data.tasks) patch.tasks = data.tasks
         if (data.progress) patch.progress = data.progress
         if (data.user_name) patch.userName = data.user_name
@@ -645,7 +647,6 @@ export default class LearnFlow extends React.Component {
         if (data.chat_msgs && data.chat_msgs.length) patch.chatMsgs = data.chat_msgs
         if (Array.isArray(data.chat_sessions)) patch.chatSessions = data.chat_sessions
         if (data.settings) patch.settings = { ...this.state.settings, ...data.settings }
-        if (Array.isArray(data.saved_roadmaps)) patch.savedRoadmaps = data.saved_roadmaps
         if (data.planner_items && typeof data.planner_items === 'object') patch.plannerItems = data.planner_items
         if (data.kanban_cards) patch.kanbanCards = data.kanban_cards
         if (data.expanded_skill_phases) patch.expandedSkillPhases = data.expanded_skill_phases

@@ -137,17 +137,16 @@ async function main() {
   }
 
   if (iosExists) {
-    console.log('\niOS icons:')
-    for (const [base, scale] of iosIcons) {
-      const size = Math.round(base * scale)
-      const name = `icon-${base}@${scale}x.png`
-      await png(iconBuf, join(iosIconDir, name), size)
-    }
+    // Modern Xcode (14+) uses a single 1024×1024 icon — filename must match Contents.json
+    console.log('\niOS icon:')
+    await png(iconBuf, join(iosIconDir, 'AppIcon-512@2x.png'), 1024)
+
+    // Splash filenames must match Contents.json exactly
     console.log('\niOS splash:')
     const splashBuf = splash2732
-    await sharp(splashBuf).png().toFile(join(iosSplashDir, 'splash.png'))
-    await sharp(splashBuf).png().toFile(join(iosSplashDir, 'splash@2x.png'))
-    await sharp(splashBuf).png().toFile(join(iosSplashDir, 'splash@3x.png'))
+    await sharp(splashBuf).png().toFile(join(iosSplashDir, 'splash-2732x2732.png'))
+    await sharp(splashBuf).png().toFile(join(iosSplashDir, 'splash-2732x2732-1.png'))
+    await sharp(splashBuf).png().toFile(join(iosSplashDir, 'splash-2732x2732-2.png'))
     console.log(`  ✓ iOS splash images (2732×2732)`)
   }
 

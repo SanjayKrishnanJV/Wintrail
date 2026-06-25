@@ -65,6 +65,7 @@ export default class LearnFlow extends React.Component {
       reduceMotion: false, celebrateMilestones: false, autoSchedule: false,
       dailyReminder: true, streakAlerts: true, weeklyReview: true,
       groundedAnswers: true, proactiveCoaching: true,
+      accentColor: 'blue',
     },
   }
 
@@ -121,7 +122,9 @@ export default class LearnFlow extends React.Component {
         if (saved.expandedSkillPhases) patch.expandedSkillPhases = saved.expandedSkillPhases
         if (Array.isArray(saved.customGoals)) patch.customGoals = saved.customGoals
         if (saved.screen && !['landing', 'onboarding', 'auth'].includes(saved.screen)) patch.screen = saved.screen
-        if (Object.keys(patch).length) this.setState(patch)
+        if (Object.keys(patch).length) this.setState(patch, () => {
+          if (patch.settings?.accentColor) this._applyAccent(patch.settings.accentColor)
+        })
       }
       // Rotate daily tasks if it's a new day
       if (this._pendingTaskRefresh) {
@@ -138,6 +141,10 @@ export default class LearnFlow extends React.Component {
     // Apply reduce-motion to DOM when setting changes
     if (this.state.settings.reduceMotion !== prevState.settings?.reduceMotion) {
       document.documentElement.style.setProperty('--lf-motion', this.state.settings.reduceMotion ? '0s' : '')
+    }
+    // Apply accent colour when setting or theme changes
+    if (this.state.settings.accentColor !== prevState.settings?.accentColor || this.state.theme !== prevState.theme) {
+      this._applyAccent(this.state.settings.accentColor)
     }
     if (this._saveTimer) clearTimeout(this._saveTimer)
     this._saveTimer = setTimeout(() => {
@@ -1520,6 +1527,22 @@ export default class LearnFlow extends React.Component {
     )
   }
 
+  static ACCENT_COLORS = {
+    blue:    { label: 'Blue',    bg: '#2563EB', ink: '#1D4ED8', soft: 'rgba(37,99,235,.10)',   softDark: 'rgba(59,130,246,.16)' },
+    violet:  { label: 'Violet',  bg: '#7C3AED', ink: '#5B21B6', soft: 'rgba(124,58,237,.10)',  softDark: 'rgba(167,139,250,.15)' },
+    emerald: { label: 'Emerald', bg: '#10B981', ink: '#065F46', soft: 'rgba(16,185,129,.12)',  softDark: 'rgba(52,211,153,.15)' },
+    rose:    { label: 'Rose',    bg: '#E11D48', ink: '#9F1239', soft: 'rgba(225,29,72,.10)',   softDark: 'rgba(251,113,133,.15)' },
+  }
+
+  _applyAccent(colorKey) {
+    const isDark = this.state.theme === 'dark'
+    const c = LearnFlow.ACCENT_COLORS[colorKey] || LearnFlow.ACCENT_COLORS.blue
+    const r = document.documentElement
+    r.style.setProperty('--blue', isDark ? (colorKey === 'blue' ? '#3B82F6' : c.bg) : c.bg)
+    r.style.setProperty('--blue-ink', isDark ? (colorKey === 'blue' ? '#60A5FA' : c.bg) : c.ink)
+    r.style.setProperty('--blue-soft', isDark ? c.softDark : c.soft)
+  }
+
   static MOCK_TASKS = [
     { t: 'Review your learning goals for today', d: '10 min', done: false },
     { t: 'Read or watch: core concept for your topic', d: '30 min', done: false },
@@ -2301,8 +2324,15 @@ export default class LearnFlow extends React.Component {
       card('Appearance',
         row('Dark mode', 'Switch between light and dark themes', toggle(dark, () => this.toggleTheme())),
         row('Reduce motion', 'Minimize animations and transitions', toggle(this.state.settings.reduceMotion, () => this.setSetting('reduceMotion', !this.state.settings.reduceMotion))),
-        e('div', { style: { padding: '15px 0 4px' } }, e('div', { style: { fontSize: 14.5, fontWeight: 600, marginBottom: 12 } }, 'Accent color'),
-          e('div', { style: { display: 'flex', gap: 12 } }, ['var(--blue)', 'var(--violet)', 'var(--emerald)', 'var(--amber)'].map((c, i) => e('div', { key: i, className: 'lf-btn', style: { width: 34, height: 34, borderRadius: 11, background: c, cursor: 'pointer', border: i === 0 ? '2.5px solid var(--text)' : '2.5px solid transparent', boxShadow: 'var(--shadow-sm)' } }))))),
+        e('div', { style: { padding: '15px 0 4px' } },
+          e('div', { style: { fontSize: 14.5, fontWeight: 600, marginBottom: 12 } }, 'Accent color'),
+          e('div', { style: { display: 'flex', gap: 12 } },
+            Object.entries(LearnFlow.ACCENT_COLORS).map(([key, c]) => {
+              const active = (this.state.settings.accentColor || 'blue') === key
+              return e('div', { key, className: 'lf-btn', onClick: () => { this.setSetting('accentColor', key); this._applyAccent(key) },
+                title: c.label,
+                style: { width: 36, height: 36, borderRadius: 11, background: c.bg, cursor: 'pointer', border: active ? '3px solid var(--text)' : '3px solid transparent', boxShadow: active ? 'var(--shadow)' : 'var(--shadow-sm)', outline: active ? '2px solid var(--surface)' : 'none', outlineOffset: '1px', transform: active ? 'scale(1.1)' : 'scale(1)', transition: 'transform .15s, box-shadow .15s' } })
+            })))),  // closes: map-callback, .map(), flex-div, padding-div, card('Appearance')
       card('Notifications',
         row('Daily study reminder', 'Get nudged at your scheduled study time', toggle(this.state.settings.dailyReminder, () => this.setSetting('dailyReminder', !this.state.settings.dailyReminder))),
         row('Streak alerts', 'Warn me before I break my streak', toggle(this.state.settings.streakAlerts, () => this.setSetting('streakAlerts', !this.state.settings.streakAlerts))),

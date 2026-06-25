@@ -1594,34 +1594,70 @@ export default class LearnFlow extends React.Component {
     const year = now.getFullYear(); const month = now.getMonth()
     const firstDay = new Date(year, month, 1)
     const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const startOffset = (firstDay.getDay() + 6) % 7   // 0 = Mon
+    const startOffset = (firstDay.getDay() + 6) % 7
     const dows = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     const rm = this.state.roadmap
+    const today = now.getDate()
 
-    // Gather events per day
     const eventsByDay = {}
+    const add = (d, ev) => { eventsByDay[d] = [...(eventsByDay[d] || []), ev] }
+
+    // 1. User-added planner items
     Object.entries(this.state.plannerItems).forEach(([iso, items]) => {
       const d = parseInt(iso.slice(8, 10)); const m = parseInt(iso.slice(5, 7)) - 1; const y = parseInt(iso.slice(0, 4))
-      if (y === year && m === month) { eventsByDay[d] = (eventsByDay[d] || []).concat(items) }
+      if (y === year && m === month) items.forEach((it) => add(d, it))
     })
-    // Add today's roadmap tasks on today's date
-    const today = now.getDate()
-    if (rm && rm.todaysTasks) {
-      eventsByDay[today] = [...(eventsByDay[today] || []), ...rm.todaysTasks.slice(0, 3).map((t) => ({ id: 'rt' + t.t.slice(0, 6), t: t.t, c: 'var(--violet)' }))]
-    }
-    // Add milestones that match this month
-    if (rm && rm.milestones) {
-      rm.milestones.forEach((m, i) => {
-        // Look for day number in the date string e.g. "Week 6" skip, "Nov 15" parse
-        const match = m.d && m.d.match(/\b(\d{1,2})\b/)
-        if (match) {
-          const day = parseInt(match[1]); if (day >= 1 && day <= daysInMonth)
-            eventsByDay[day] = [...(eventsByDay[day] || []), { id: 'ms' + i, t: m.t, c: 'var(--amber)' }]
+
+    if (rm) {
+      // 2. Distribute roadmap tasks/courses across all weekdays this month starting from today
+      const phase = rm.phases?.find((p) => p.status === 'In progress') || rm.phases?.[0]
+      const taskPool = [
+        ...(rm.todaysTasks || []).map((t) => ({ t: t.t, c: 'var(--violet)', src: 'task' })),
+        ...(phase?.courses || []).map((c) => ({ t: c.split(' | ')[0].split(' — ')[0].trim(), c: 'var(--blue)', src: 'course' })),
+        ...(phase?.projects || []).map((p) => ({ t: p, c: 'var(--emerald)', src: 'project' })),
+      ]
+      if (taskPool.length > 0) {
+        let poolIdx = 0
+        for (let d = today; d <= daysInMonth; d++) {
+          const date = new Date(year, month, d)
+          const dow = date.getDay()
+          if (dow === 0 || dow === 6) continue  // skip weekends
+          // Only add if user hasn't added anything to this day
+          const iso = date.toISOString().slice(0, 10)
+          if (!(this.state.plannerItems[iso] || []).length) {
+            add(d, { id: 'gen' + d, t: taskPool[poolIdx % taskPool.length].t, c: taskPool[poolIdx % taskPool.length].c })
+            poolIdx++
+          }
+        }
+        // Add weekly review on Sundays
+        for (let d = 1; d <= daysInMonth; d++) {
+          if (new Date(year, month, d).getDay() === 0) {
+            add(d, { id: 'rev' + d, t: 'Weekly review', c: 'var(--violet)' })
+          }
+        }
+      }
+
+      // 3. Milestones — parse "Sep 2026", "Week 6", "Nov 15", etc.
+      const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+      ;(rm.milestones || []).forEach((ms, i) => {
+        if (!ms.d) return
+        const s = ms.d.toLowerCase()
+        // "Week N" → place at that weekday offset from first of month
+        const weekMatch = s.match(/week\s*(\d+)/)
+        if (weekMatch) {
+          const d = Math.min(1 + (parseInt(weekMatch[1]) - 1) * 7, daysInMonth)
+          add(d, { id: 'ms' + i, t: '🎯 ' + ms.t, c: 'var(--amber)' })
+          return
+        }
+        // "Month Year" or "Month Day" → check if it's this month
+        const mIdx = monthNames.findIndex((mn) => s.includes(mn))
+        if (mIdx === month) {
+          const dayMatch = s.match(/\b([12]\d|3[01]|0?[1-9])\b/)
+          const d = dayMatch ? parseInt(dayMatch[0]) : 15
+          if (d >= 1 && d <= daysInMonth) add(d, { id: 'ms' + i, t: '🎯 ' + ms.t, c: 'var(--amber)' })
         }
       })
     }
-
-    const palette = ['var(--blue)', 'var(--violet)', 'var(--emerald)', 'var(--amber)']
 
     const cells = []
     for (let p = 0; p < startOffset; p++) cells.push(null)
@@ -1629,16 +1665,23 @@ export default class LearnFlow extends React.Component {
     while (cells.length % 7 !== 0) cells.push(null)
 
     return e('div', { style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', padding: 20, boxShadow: 'var(--shadow-sm)' } },
-      e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, marginBottom: 6 } },
-        dows.map((d, i) => e('div', { key: i, style: { fontSize: 12, fontWeight: 700, color: 'var(--subtle)', textAlign: 'center', padding: '4px 0' } }, d))),
-      e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 } },
+      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 } },
+        e('div', { style: { fontSize: 15, fontWeight: 700 } }, now.toLocaleString('default', { month: 'long', year: 'numeric' })),
+        e('div', { style: { display: 'flex', gap: 12, fontSize: 11.5, color: 'var(--muted)' } },
+          [['var(--violet)', 'Tasks'], ['var(--blue)', 'Courses'], ['var(--emerald)', 'Projects'], ['var(--amber)', 'Milestones']].map((l, i) =>
+            e('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: 5 } }, e('span', { style: { width: 8, height: 8, borderRadius: 99, background: l[0] } }), l[1])))),
+      e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3, marginBottom: 3 } },
+        dows.map((d, i) => e('div', { key: i, style: { fontSize: 11.5, fontWeight: 700, color: 'var(--subtle)', textAlign: 'center', padding: '4px 0' } }, d))),
+      e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 } },
         cells.map((d, i) => {
-          if (!d) return e('div', { key: i, style: { minHeight: 90, borderRadius: 10, background: 'var(--surface-2)', opacity: .25 } })
-          const isToday = d === today; const evts = eventsByDay[d] || []
-          return e('div', { key: i, style: { minHeight: 90, borderRadius: 10, background: isToday ? 'var(--blue-soft)' : 'var(--surface-2)', border: '1px solid ' + (isToday ? 'var(--blue)' : 'var(--border)'), padding: '6px 7px', overflow: 'hidden', verticalAlign: 'top' } },
-            e('div', { style: { fontSize: 13, fontWeight: isToday ? 800 : 600, color: isToday ? 'var(--blue)' : 'var(--text)', marginBottom: 5 } }, d),
-            evts.slice(0, 3).map((ev, j) => e('div', { key: j, style: { fontSize: 11, fontWeight: 600, padding: '2px 6px', marginBottom: 2, borderRadius: 5, background: ev.c || palette[j % palette.length], color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, ev.t)),
-            evts.length > 3 && e('div', { style: { fontSize: 10.5, color: 'var(--muted)', paddingLeft: 2 } }, '+' + (evts.length - 3) + ' more'))
+          if (!d) return e('div', { key: i, style: { minHeight: 95, borderRadius: 8, background: 'var(--surface-2)', opacity: .2 } })
+          const isToday = d === today
+          const isPast = d < today
+          const evts = eventsByDay[d] || []
+          return e('div', { key: i, style: { minHeight: 95, borderRadius: 8, background: isToday ? 'var(--blue-soft)' : 'var(--surface-2)', border: '1px solid ' + (isToday ? 'var(--blue)' : 'var(--border)'), padding: '6px 6px 4px', overflow: 'hidden', opacity: isPast ? .6 : 1 } },
+            e('div', { style: { fontSize: 12.5, fontWeight: isToday ? 800 : 600, color: isToday ? 'var(--blue)' : isPast ? 'var(--subtle)' : 'var(--text)', marginBottom: 4 } }, d),
+            evts.slice(0, 3).map((ev, j) => e('div', { key: j, style: { fontSize: 10.5, fontWeight: 600, padding: '2px 5px', marginBottom: 2, borderRadius: 4, background: ev.c || 'var(--blue)', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, ev.t)),
+            evts.length > 3 && e('div', { style: { fontSize: 10, color: 'var(--muted)', paddingLeft: 2, fontWeight: 600 } }, '+' + (evts.length - 3) + ' more'))
         })))
   }
 
@@ -1749,87 +1792,123 @@ export default class LearnFlow extends React.Component {
       e('div', { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, 'No skill tree yet'),
       e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginBottom: 24 } }, 'Your skill tree is generated from your learning roadmap.'),
       e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
+    return this._buildSkillTreeSVG(rm)
+  }
 
+  _buildSkillTreeSVG(rm) {
     const phases = rm.phases || []
-    const expanded = this.state.expandedSkillPhases
-    const statusIcon = (status) => status === 'learned'
-      ? e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M20 6 9 17l-5-5' }))
-      : status === 'inprogress'
-      ? e('span', { style: { fontSize: 13, fontWeight: 800, color: 'var(--blue-ink)' } }, '⋯')
-      : e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--subtle)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M6 11V8a6 6 0 0 1 12 0v3' }), e('rect', { x: 5, y: 11, width: 14, height: 9, rx: 2 }))
+    const expanded = this.state.expandedSkillPhases   // { phaseIdx: bool }
+    const n = phases.length
+    const W = Math.max(960, n * 210)
+    const pad = 110
+    const phaseY = 90
+    const skillRowY = 230   // top of skill node area
+    const skillRowH = 100  // row height for skills
+    const sty = {
+      learned:    { bg: 'var(--emerald)', ring: 'var(--emerald)',      fg: '#fff',            soft: 'var(--emerald-soft)' },
+      inprogress: { bg: 'var(--surface)', ring: 'var(--blue)',         fg: 'var(--blue-ink)', soft: 'var(--blue-soft)' },
+      locked:     { bg: 'var(--surface-2)', ring: 'var(--border-strong)', fg: 'var(--subtle)',   soft: 'transparent' },
+    }
+    const phaseX = (i) => Math.round(pad + (i * (W - 2 * pad)) / Math.max(n - 1, 1))
+
+    // Build node + edge lists
+    const phaseNodes = phases.map((p, i) => ({
+      id: 'p' + i, phaseIdx: i, x: phaseX(i), y: phaseY,
+      label: p.title, sub: p.cert, pct: p.pct,
+      status: p.pct === 100 ? 'learned' : p.status === 'In progress' ? 'inprogress' : 'locked',
+      color: LearnFlow.PHASE_COLORS[i % LearnFlow.PHASE_COLORS.length],
+    }))
+
+    const skillNodes = []; const skillEdges = []
+    phases.forEach((p, pi) => {
+      const isExpanded = expanded[pi] !== false  // default: expanded (false to collapse)
+      if (!isExpanded) return
+      const px = phaseX(pi)
+      ;(p.skills || []).slice(0, 4).forEach((skill, si) => {
+        const col = si % 2; const row = Math.floor(si / 2)
+        const x = px + (col === 0 ? -62 : 62)
+        const y = skillRowY + row * skillRowH
+        const status = p.pct === 100 ? 'learned' : (p.status === 'In progress' && si < 2) ? 'inprogress' : 'locked'
+        const id = 'p' + pi + 's' + si
+        skillNodes.push({ id, x, y, label: skill, status })
+        skillEdges.push({ ax: px, ay: phaseY, bx: x, by: y, locked: status === 'locked' })
+      })
+    })
+
+    const anyExpanded = phases.some((_, pi) => expanded[pi] !== false)
+    const H = anyExpanded ? skillRowY + skillRowH * 2 + 60 : phaseY + 90
 
     const totalSkills = phases.reduce((a, p) => a + (p.skills || []).length, 0)
-    const masteredSkills = phases.filter((p) => p.pct === 100).reduce((a, p) => a + (p.skills || []).length, 0)
-    const inProgSkills = phases.filter((p) => p.status === 'In progress').reduce((a, p) => a + (p.skills || []).length, 0)
+    const mastered = phases.filter((p) => p.pct === 100).reduce((a, p) => a + (p.skills || []).length, 0)
+    const inProg = phases.filter((p) => p.status === 'In progress').reduce((a, p) => a + (p.skills || []).length, 0)
+
+    const iconCheck = e('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M20 6 9 17l-5-5' }))
+    const iconLock = e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--subtle)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M6 11V8a6 6 0 0 1 12 0v3' }), e('rect', { x: 5, y: 11, width: 14, height: 9, rx: 2 }))
+
+    // Selected phase tooltip (show cert + courses)
+    const nextPhase = phases.find((p) => p.status !== 'Completed' && p.pct < 100)
 
     return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 18 } },
+      // Header
       e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 } },
         e('div', {}, e('div', { style: { fontSize: 24, fontWeight: 800, letterSpacing: '-.03em' } }, 'Skill Tree'),
-          e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginTop: 3 } }, rm.headline + ' · click a phase to expand its skills')),
-        e('div', { style: { display: 'flex', gap: 18 } },
-          [['var(--emerald)', 'Mastered · ' + masteredSkills], ['var(--blue)', 'In progress · ' + inProgSkills], ['var(--subtle)', 'Locked · ' + (totalSkills - masteredSkills - inProgSkills)]].map((l, i) =>
-            e('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: 'var(--muted)', fontWeight: 500 } },
-              e('span', { style: { width: 10, height: 10, borderRadius: 99, background: l[0] } }), l[1])))),
+          e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginTop: 3 } }, rm.headline + ' · click any phase node to expand / collapse its skills')),
+        e('div', { style: { display: 'flex', gap: 18, flexWrap: 'wrap' } },
+          [['var(--emerald)', 'Mastered · ' + mastered], ['var(--blue)', 'In progress · ' + inProg], ['var(--subtle)', 'Locked · ' + (totalSkills - mastered - inProg)]].map((l, i) =>
+            e('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: 'var(--muted)', fontWeight: 500 } }, e('span', { style: { width: 10, height: 10, borderRadius: 99, background: l[0] } }), l[1])))),
 
-      // Vertical expandable tree
-      e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-        phases.map((p, pi) => {
-          const c = LearnFlow.PHASE_COLORS[pi % LearnFlow.PHASE_COLORS.length]
-          const status = p.pct === 100 ? 'learned' : p.status === 'In progress' ? 'inprogress' : 'locked'
-          const isExpanded = expanded[pi] !== false  // default open
-          const skills = p.skills || []
-          const phaseStatusColor = status === 'learned' ? 'var(--emerald)' : status === 'inprogress' ? 'var(--blue)' : 'var(--subtle)'
-          const phaseBg = status === 'learned' ? 'var(--emerald)' : status === 'inprogress' ? 'var(--surface)' : 'var(--surface-2)'
-          const phaseRing = status === 'learned' ? 'var(--emerald)' : status === 'inprogress' ? 'var(--blue)' : 'var(--border-strong)'
+      // SVG canvas
+      e('div', { className: 'lf-scroll', style: { borderRadius: 22, background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)', padding: 20, overflowX: 'auto' } },
+        e('div', { style: { position: 'relative', width: W, height: H, margin: '0 auto', transition: 'height .3s' } },
+          // SVG edges layer
+          e('svg', { width: W, height: H, style: { position: 'absolute', inset: 0, pointerEvents: 'none' } },
+            // Phase-to-phase connectors (always visible)
+            phases.slice(1).map((_, i) => {
+              const ax = phaseX(i), bx = phaseX(i + 1)
+              return e('line', { key: 'pp' + i, x1: ax, y1: phaseY, x2: bx, y2: phaseY, stroke: 'var(--border-strong)', strokeWidth: 2.5, opacity: .7 })
+            }),
+            // Phase-to-skill curved edges (only for expanded phases)
+            skillEdges.map((ed, i) =>
+              e('path', { key: 'sk' + i, d: 'M' + ed.ax + ' ' + (phaseY + 32) + ' C' + ed.ax + ' ' + (ed.by - 40) + ',' + ed.bx + ' ' + (ed.by - 40) + ',' + ed.bx + ' ' + ed.by, fill: 'none', stroke: ed.locked ? 'var(--border)' : 'var(--blue)', strokeWidth: 1.8, strokeDasharray: ed.locked ? '5 5' : 'none', opacity: ed.locked ? .5 : .55 }))
+          ),
 
-          return e('div', { key: pi, style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' } },
-            // Phase header — click to expand/collapse
-            e('div', { onClick: () => this.toggleSkillPhase(pi), className: 'lf-btn', style: { display: 'flex', alignItems: 'center', gap: 16, padding: '18px 22px', cursor: 'pointer', borderBottom: isExpanded ? '1px solid var(--border)' : 'none', transition: 'background .2s' } },
-              // Status badge
-              e('div', { style: { width: 44, height: 44, flex: 'none', borderRadius: 13, background: phaseBg, border: '2.5px solid ' + phaseRing, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: status === 'inprogress' ? '0 0 0 5px var(--blue-soft)' : 'none' } },
-                statusIcon(status)),
-              // Phase info
-              e('div', { style: { flex: 1, minWidth: 0 } },
-                e('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
-                  e('span', { style: { fontSize: 16, fontWeight: 700 } }, 'Phase ' + p.n + ' · ' + p.title),
-                  e('span', { style: { fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 99, background: c.soft, color: c.color } }, p.cert),
-                  e('span', { style: { fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 99, background: status === 'learned' ? 'var(--emerald-soft)' : status === 'inprogress' ? 'var(--blue-soft)' : 'var(--surface-2)', color: phaseStatusColor } }, p.status)),
-                e('div', { style: { fontSize: 13, color: 'var(--muted)', marginTop: 4 } }, p.sub)),
-              // Progress + expand toggle
-              e('div', { style: { display: 'flex', alignItems: 'center', gap: 14, flex: 'none' } },
-                e('div', { style: { textAlign: 'right' } },
-                  e('div', { style: { fontSize: 20, fontWeight: 800, color: c.color } }, p.pct + '%'),
-                  e('div', { style: { width: 80, height: 5, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden', marginTop: 4 } },
-                    e('div', { style: { height: '100%', width: p.pct + '%', borderRadius: 99, background: c.color } }))),
-                e('div', { style: { fontSize: 18, color: 'var(--muted)', fontWeight: 700, transition: 'transform .25s', transform: isExpanded ? 'rotate(180deg)' : 'none' } }, '▾')),
-            ),
+          // Phase nodes
+          phaseNodes.map((n) => {
+            const st = sty[n.status]
+            const isExp = expanded[n.phaseIdx] !== false
+            return e('div', { key: n.id, onClick: () => this.toggleSkillPhase(n.phaseIdx), className: 'lf-btn',
+              style: { position: 'absolute', left: n.x, top: n.y, transform: 'translate(-50%,-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, cursor: 'pointer', zIndex: 3, userSelect: 'none' } },
+              // Node circle
+              e('div', { style: { width: 64, height: 64, borderRadius: 20, background: st.bg, border: '3px solid ' + st.ring, boxShadow: n.status === 'inprogress' ? '0 0 0 7px ' + st.soft : n.status === 'learned' ? 'var(--shadow)' : 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, position: 'relative', transition: 'box-shadow .2s' } },
+                n.status === 'learned' ? iconCheck
+                : n.status === 'inprogress' ? e('div', { style: { fontSize: 18, fontWeight: 800, color: st.fg } }, '⋯')
+                : iconLock,
+                // expand/collapse indicator
+                e('div', { style: { position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)', width: 16, height: 16, borderRadius: 99, background: 'var(--surface)', border: '1.5px solid ' + st.ring, fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', color: st.ring, fontWeight: 800 } }, isExp ? '▲' : '▼')),
+              // Label
+              e('div', { style: { textAlign: 'center', maxWidth: 110 } },
+                e('div', { style: { fontSize: 12.5, fontWeight: 700, color: n.status === 'locked' ? 'var(--subtle)' : 'var(--text)', lineHeight: 1.2 } }, n.label),
+                e('div', { style: { fontSize: 10.5, fontWeight: 700, marginTop: 2, color: n.status === 'learned' ? 'var(--emerald)' : n.status === 'inprogress' ? 'var(--blue)' : 'var(--subtle)' } }, n.sub)))
+          }),
 
-            // Skills — collapsible
-            isExpanded && e('div', { style: { padding: '18px 22px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 10 } },
-              // Skills
-              skills.map((skill, si) => {
-                const skillStatus = p.pct === 100 ? 'learned' : (p.status === 'In progress' && si < 2) ? 'inprogress' : 'locked'
-                return e('div', { key: si, style: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: skillStatus === 'learned' ? 'var(--emerald-soft)' : skillStatus === 'inprogress' ? 'var(--blue-soft)' : 'var(--surface-2)', border: '1px solid ' + (skillStatus === 'inprogress' ? 'var(--blue)' : 'transparent') } },
-                  e('div', { style: { width: 28, height: 28, flex: 'none', borderRadius: 8, background: skillStatus === 'learned' ? 'var(--emerald)' : skillStatus === 'inprogress' ? 'var(--blue)' : 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
-                    statusIcon(skillStatus)),
-                  e('span', { style: { fontSize: 13.5, fontWeight: 600, color: skillStatus === 'locked' ? 'var(--subtle)' : 'var(--text)' } }, skill))
-              }),
-              // Courses subsection
-              (p.courses || []).length > 0 && e('div', { style: { gridColumn: '1/-1', marginTop: 6, paddingTop: 14, borderTop: '1px solid var(--border)' } },
-                e('div', { style: { fontSize: 12, fontWeight: 700, color: 'var(--subtle)', letterSpacing: '.06em', marginBottom: 10 } }, 'COURSES & RESOURCES'),
-                e('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
-                  (p.courses || []).map((course, ci) => {
-                    const [courseStr, url = ''] = course.split(' | ')
-                    const [name, platform] = courseStr.split(' — ')
-                    return e('div', { key: ci, style: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10, background: 'var(--surface-2)', cursor: url ? 'pointer' : 'default' }, onClick: () => url && window.open(url, '_blank') },
-                      e('div', { style: { width: 8, height: 8, borderRadius: 99, background: c.color, flex: 'none' } }),
-                      e('span', { style: { fontSize: 13, fontWeight: 500, flex: 1 } }, name),
-                      platform && e('span', { style: { fontSize: 11.5, color: 'var(--muted)', fontWeight: 600 } }, platform),
-                      url && e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }), e('path', { d: 'M15 3h6v6M10 14 21 3' })))
-                  })))
-            )
-          )
-        }))
+          // Skill nodes
+          skillNodes.map((n) => {
+            const st = sty[n.status]
+            return e('div', { key: n.id, style: { position: 'absolute', left: n.x, top: n.y, transform: 'translate(-50%,-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, zIndex: 2, animation: 'lf-pop .25s both' } },
+              e('div', { style: { width: 44, height: 44, borderRadius: 13, background: st.bg, border: '2px solid ' + st.ring, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: n.status === 'inprogress' ? '0 0 0 5px ' + st.soft : 'none' } },
+                n.status === 'learned' ? e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M20 6 9 17l-5-5' }))
+                : n.status === 'inprogress' ? e('div', { style: { fontSize: 13, fontWeight: 800, color: st.fg } }, '⋯')
+                : e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--subtle)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M6 11V8a6 6 0 0 1 12 0v3' }), e('rect', { x: 5, y: 11, width: 14, height: 9, rx: 2 }))),
+              e('div', { style: { textAlign: 'center', maxWidth: 90, fontSize: 11, fontWeight: 600, color: n.status === 'locked' ? 'var(--subtle)' : 'var(--text)', lineHeight: 1.25 } }, n.label))
+          })
+        )),
+
+      // Next phase hint
+      nextPhase && e('div', { style: { display: 'flex', gap: 14, padding: '14px 18px', borderRadius: 14, background: 'var(--blue-soft)', border: '1px solid var(--border)', alignItems: 'center' } },
+        e('div', { style: { width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' } },
+          e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M12 3v3M12 18v3M3 12h3M18 12h3' }))),
+        e('div', { style: { flex: 1, fontSize: 14, color: 'var(--text)' } }, e('b', {}, 'Next: ' + nextPhase.title + ' · ' + nextPhase.cert), ' — ' + nextPhase.sub),
+        e('button', { className: 'lf-btn', onClick: this.go('mentor'), style: { padding: '8px 14px', borderRadius: 9, border: 'none', background: 'var(--blue)', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' } }, 'Ask Mentor how'))
     )
   }
 

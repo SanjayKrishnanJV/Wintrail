@@ -146,6 +146,7 @@ export default class LearnFlow extends React.Component {
         if (Object.keys(patch).length) this.setState(patch, () => {
           if (patch.settings?.accentColor) this._applyAccent(patch.settings.accentColor)
         })
+        this._dataLoaded = true
       }
       // Rotate daily tasks if it's a new day
       if (this._pendingTaskRefresh) {
@@ -156,6 +157,8 @@ export default class LearnFlow extends React.Component {
         }, 50)
       }
     } catch { /* ignore */ }
+    // Mark data as loaded even if nothing was in localStorage so new data can be saved
+    this._dataLoaded = true
   }
 
   componentDidUpdate(_, prevState) {
@@ -167,6 +170,9 @@ export default class LearnFlow extends React.Component {
     if (this.state.settings.accentColor !== prevState.settings?.accentColor || this.state.theme !== prevState.theme) {
       this._applyAccent(this.state.settings.accentColor)
     }
+    // Only persist after initial data load is complete — prevents overwriting Supabase
+    // with empty state while loadFromSupabase() is still in-flight.
+    if (!this._dataLoaded) return
     if (this._saveTimer) clearTimeout(this._saveTimer)
     this._saveTimer = setTimeout(() => {
       try {
@@ -570,6 +576,7 @@ export default class LearnFlow extends React.Component {
         if (data.expanded_skill_phases) patch.expandedSkillPhases = data.expanded_skill_phases
         if (Array.isArray(data.custom_goals)) patch.customGoals = data.custom_goals
         this.setState(patch, () => {
+          this._dataLoaded = true
           // Rotate tasks on new day after cloud restore
           const todayIso = new Date().toISOString().slice(0, 10)
           if (data.progress?.lastDate !== todayIso && this.state.roadmap) {
@@ -578,9 +585,12 @@ export default class LearnFlow extends React.Component {
           }
         })
       } else {
+        // New user — no data yet; allow saves so onboarding result gets persisted
+        this._dataLoaded = true
         this.setState({ screen: 'onboarding' })
       }
     } catch {
+      this._dataLoaded = true
       this.setState({ screen: 'onboarding' })
     }
   }
@@ -2551,11 +2561,15 @@ export default class LearnFlow extends React.Component {
     const isMentorTab = tab === 'mentor'
     return e('div', { style: { height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' } },
       e('div', { style: { flex: 1, overflowY: isMentorTab ? 'hidden' : 'auto', WebkitOverflowScrolling: 'touch', paddingTop: isMentorTab ? 0 : 'calc(env(safe-area-inset-top, 0px) + 16px)' } },
-        tab === 'home'     && this.buildNativeHome(),
-        tab === 'roadmaps' && this.buildNativeRoadmaps(),
-        tab === 'planner'  && this.buildNativePlanner(),
-        tab === 'mentor'   && this.buildNativeMentor(),
-        tab === 'profile'  && this.buildNativeProfile()
+        tab === 'home'      && this.buildNativeHome(),
+        tab === 'roadmaps'  && this.buildNativeRoadmaps(),
+        tab === 'planner'   && this.buildNativePlanner(),
+        tab === 'mentor'    && this.buildNativeMentor(),
+        tab === 'analytics' && this.buildNativeAnalytics(),
+        tab === 'skilltree' && this.buildNativeSkilltree(),
+        tab === 'library'   && this.buildNativeLibrary(),
+        tab === 'goals'     && this.buildNativeGoals(),
+        tab === 'more'      && this.buildNativeMore()
       ),
       this.buildNativeTabBar(tab)
     )
@@ -2953,19 +2967,360 @@ export default class LearnFlow extends React.Component {
           e('path', { d: 'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1' })),
       },
       {
-        id: 'profile', label: 'Profile',
+        id: 'more', label: 'More',
         icon: (a) => e('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: a ? 'var(--blue)' : 'var(--subtle)', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' },
-          e('circle', { cx: 12, cy: 8, r: 4 }), e('path', { d: 'M4 20c0-4 3.6-7 8-7s8 3 8 7' })),
+          e('circle', { cx: 5, cy: 12, r: 1.5 }), e('circle', { cx: 12, cy: 12, r: 1.5 }), e('circle', { cx: 19, cy: 12, r: 1.5 })),
       },
     ]
+    // Highlight More tab when any sub-screen is active
+    const moreScreens = ['analytics', 'skilltree', 'library', 'goals', 'more']
     return e('div', { style: { flexShrink: 0, display: 'flex', borderTop: '1px solid var(--border)', background: 'var(--surface)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' } },
       tabs.map((t) => {
-        const active = currentTab === t.id
+        const active = t.id === 'more' ? moreScreens.includes(currentTab) : currentTab === t.id
         return e('button', { key: t.id, onClick: () => { haptic(); this.setState({ mobileTab: t.id }) }, style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '10px 0', border: 'none', background: 'transparent', cursor: 'pointer', color: active ? 'var(--blue)' : 'var(--subtle)', fontFamily: 'inherit' } },
           t.icon(active),
           e('span', { style: { fontSize: 10, fontWeight: active ? 700 : 500 } }, t.label)
         )
       })
+    )
+  }
+
+  // ── More menu ────────────────────────────────────────────────────────────────
+
+  buildNativeMore() {
+    const s = this.state
+    const name = s.userName || (s.user ? s.user.email?.split('@')[0] : '')
+    const email = s.user?.email || ''
+    const initials = name ? name.slice(0, 2).toUpperCase() : '??'
+
+    const menuItem = (id, label, sub, iconPath, color) =>
+      e('button', { key: id, onClick: () => { haptic(); this.setState({ mobileTab: id }) }, style: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' } },
+        e('div', { style: { width: 40, height: 40, borderRadius: 13, background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } },
+          e('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }, ...iconPath)
+        ),
+        e('div', { style: { flex: 1 } },
+          e('div', { style: { fontSize: 15, fontWeight: 600, color: 'var(--text)' } }, label),
+          e('div', { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } }, sub)
+        ),
+        e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--subtle)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M9 18l6-6-6-6' }))
+      )
+
+    return e('div', { style: { padding: '0 20px 32px' } },
+      // Profile card
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 14, padding: '16px', borderRadius: 18, background: 'var(--surface)', border: '1px solid var(--border)', marginBottom: 24 } },
+        e('div', { style: { width: 52, height: 52, borderRadius: 18, background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, color: '#fff', flexShrink: 0 } }, initials),
+        e('div', { style: { flex: 1, minWidth: 0 } },
+          e('div', { style: { fontSize: 17, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, name),
+          e('div', { style: { fontSize: 13, color: 'var(--muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, email)
+        ),
+        e('button', { onClick: () => { haptic(); this.setState({ mobileTab: 'profile' }) }, style: { padding: '7px 13px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 } }, 'Edit')
+      ),
+      // Menu sections
+      e('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.08em', marginBottom: 8 } }, 'LEARNING'),
+      e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 20 } },
+        menuItem('analytics', 'Analytics', 'Progress charts & streak history', [e('path', { key: 1, d: 'M4 20V11' }), e('path', { key: 2, d: 'M10 20V4' }), e('path', { key: 3, d: 'M16 20v-6' }), e('path', { key: 4, d: 'M3 20h18' })], 'var(--violet)'),
+        menuItem('skilltree', 'Skill Tree', 'Skills from your roadmap phases', [e('path', { key: 1, d: 'M12 3v4' }), e('path', { key: 2, d: 'M6 17l6-6 6 6' }), e('rect', { key: 3, x: 10, y: 3, width: 4, height: 4, rx: 1 }), e('rect', { key: 4, x: 4, y: 17, width: 4, height: 4, rx: 1 }), e('rect', { key: 5, x: 16, y: 17, width: 4, height: 4, rx: 1 })], 'var(--emerald)'),
+        menuItem('library',   'Library',    'Courses and resources from your roadmap', [e('path', { key: 1, d: 'M6 4h10v16H8a2 2 0 0 1-2-2z' }), e('path', { key: 2, d: 'M6 4v18' })], 'var(--amber)'),
+        e('button', { onClick: () => { haptic(); this.setState({ mobileTab: 'goals' }) }, style: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' } },
+          e('div', { style: { width: 40, height: 40, borderRadius: 13, background: 'rgba(37,99,235,.13)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } },
+            e('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--blue)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('circle', { cx: 12, cy: 12, r: 9 }), e('circle', { cx: 12, cy: 12, r: 4 }), e('circle', { cx: 12, cy: 12, r: 1 }))
+          ),
+          e('div', { style: { flex: 1 } },
+            e('div', { style: { fontSize: 15, fontWeight: 600, color: 'var(--text)' } }, 'Goals'),
+            e('div', { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } }, 'Milestones and custom goals')
+          ),
+          e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--subtle)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M9 18l6-6-6-6' }))
+        )
+      ),
+      e('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.08em', marginBottom: 8 } }, 'ACCOUNT'),
+      e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 20 } },
+        e('button', { onClick: () => { haptic(); this.setState({ mobileTab: 'profile' }) }, style: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' } },
+          e('div', { style: { width: 40, height: 40, borderRadius: 13, background: 'rgba(124,58,237,.13)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } },
+            e('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--violet)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('circle', { cx: 12, cy: 8, r: 4 }), e('path', { d: 'M4 20c0-4 3.6-7 8-7s8 3 8 7' }))
+          ),
+          e('div', { style: { flex: 1 } },
+            e('div', { style: { fontSize: 15, fontWeight: 600, color: 'var(--text)' } }, 'Profile & Settings'),
+            e('div', { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } }, 'Theme, accent colour, notifications')
+          ),
+          e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--subtle)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M9 18l6-6-6-6' }))
+        ),
+        e('button', { onClick: () => { haptic(); this.doSignOut() }, style: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' } },
+          e('div', { style: { width: 40, height: 40, borderRadius: 13, background: 'rgba(239,68,68,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } },
+            e('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: '#EF4444', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' }), e('polyline', { points: '16 17 21 12 16 7' }), e('line', { x1: 21, y1: 12, x2: 9, y2: 12 }))
+          ),
+          e('div', { style: { flex: 1 } },
+            e('div', { style: { fontSize: 15, fontWeight: 600, color: '#EF4444' } }, 'Sign out'),
+            e('div', { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } }, name)
+          )
+        )
+      )
+    )
+  }
+
+  // ── Analytics tab ─────────────────────────────────────────────────────────────
+
+  buildNativeAnalytics() {
+    const s = this.state
+    const prog = s.progress
+    const rm = s.roadmap
+    const phases = rm ? (rm.phases || []).map((p, i) => ({ ...p, pct: this._phasePct(i), color: LearnFlow.PHASE_COLORS[i % LearnFlow.PHASE_COLORS.length].color })) : []
+    const overallPct = phases.length ? Math.round(phases.map((p) => p.pct).reduce((a, b) => a + b, 0) / phases.length) : 0
+    const tasks = s.tasks || []
+    const donePct = tasks.length ? Math.round((tasks.filter((t) => t.done).length / tasks.length) * 100) : 0
+    const dates = prog.dates || []
+    // Last 7 days activity
+    const today = new Date()
+    const week = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today); d.setDate(d.getDate() - (6 - i))
+      const iso = d.toISOString().slice(0, 10)
+      return { label: d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 1), iso, active: dates.includes(iso) }
+    })
+
+    const statCard = (val, label, color) =>
+      e('div', { style: { flex: 1, borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', padding: '14px 10px', textAlign: 'center' } },
+        e('div', { style: { fontSize: 22, fontWeight: 800, color } }, val),
+        e('div', { style: { fontSize: 11, color: 'var(--muted)', marginTop: 4 } }, label)
+      )
+
+    return e('div', { style: { padding: '0 20px 24px' } },
+      e('div', { style: { fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 20 } }, 'Analytics'),
+      // Stat cards
+      e('div', { style: { display: 'flex', gap: 10, marginBottom: 20 } },
+        statCard(prog.streak, 'Day streak', 'var(--amber)'),
+        statCard(parseFloat(prog.hoursStudied.toFixed(1)) + 'h', 'Studied', 'var(--blue)'),
+        statCard(overallPct + '%', 'Overall', 'var(--emerald)')
+      ),
+      // Weekly activity
+      e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', padding: '16px', marginBottom: 16 } },
+        e('div', { style: { fontSize: 13, fontWeight: 700, marginBottom: 14 } }, 'This week'),
+        e('div', { style: { display: 'flex', gap: 6, alignItems: 'flex-end', justifyContent: 'space-between' } },
+          week.map((d) =>
+            e('div', { key: d.iso, style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 } },
+              e('div', { style: { width: '100%', height: 40, borderRadius: 8, background: d.active ? 'var(--blue)' : 'var(--surface-3)', transition: 'background .2s' } }),
+              e('div', { style: { fontSize: 11, color: 'var(--muted)', fontWeight: 600 } }, d.label)
+            )
+          )
+        )
+      ),
+      // Phase progress
+      rm && e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', padding: '16px', marginBottom: 16 } },
+        e('div', { style: { fontSize: 13, fontWeight: 700, marginBottom: 14 } }, 'Phase progress'),
+        e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+          phases.map((p, i) =>
+            e('div', { key: i },
+              e('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: 6 } },
+                e('span', { style: { fontSize: 13, fontWeight: 600 } }, p.title),
+                e('span', { style: { fontSize: 12, fontWeight: 700, color: p.color } }, p.pct + '%')
+              ),
+              e('div', { style: { height: 8, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden' } },
+                e('div', { style: { height: '100%', width: p.pct + '%', borderRadius: 99, background: p.color, transition: 'width .4s ease' } })
+              )
+            )
+          )
+        )
+      ),
+      // Today's tasks summary
+      e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', padding: '16px' } },
+        e('div', { style: { fontSize: 13, fontWeight: 700, marginBottom: 12 } }, "Today's tasks"),
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: 16 } },
+          e('div', { style: { position: 'relative', width: 64, height: 64, flexShrink: 0 } },
+            e('svg', { width: 64, height: 64, viewBox: '0 0 64 64', style: { transform: 'rotate(-90deg)' } },
+              e('circle', { cx: 32, cy: 32, r: 26, fill: 'none', stroke: 'var(--surface-3)', strokeWidth: 7 }),
+              e('circle', { cx: 32, cy: 32, r: 26, fill: 'none', stroke: 'var(--emerald)', strokeWidth: 7, strokeLinecap: 'round', strokeDasharray: 2 * Math.PI * 26, strokeDashoffset: 2 * Math.PI * 26 * (1 - donePct / 100) })
+            ),
+            e('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800 } }, donePct + '%')
+          ),
+          e('div', {},
+            e('div', { style: { fontSize: 16, fontWeight: 700 } }, tasks.filter((t) => t.done).length + ' / ' + tasks.length + ' done'),
+            e('div', { style: { fontSize: 13, color: 'var(--muted)', marginTop: 4 } }, tasks.length === 0 ? 'Generate a roadmap to get tasks' : donePct === 100 ? '🎉 All done today!' : 'Keep going!')
+          )
+        )
+      )
+    )
+  }
+
+  // ── Skill Tree tab ────────────────────────────────────────────────────────────
+
+  buildNativeSkilltree() {
+    const rm = this.state.roadmap
+    const expanded = this.state.expandedSkillPhases || { 0: true }
+
+    if (!rm) {
+      return e('div', { style: { padding: '0 20px 24px', textAlign: 'center', paddingTop: 56 } },
+        e('div', { style: { width: 72, height: 72, borderRadius: 22, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' } },
+          e('svg', { width: 34, height: 34, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--muted)', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M12 3v4M6 17l6-6 6 6' }), e('rect', { x: 10, y: 3, width: 4, height: 4, rx: 1 }), e('rect', { x: 4, y: 17, width: 4, height: 4, rx: 1 }), e('rect', { x: 16, y: 17, width: 4, height: 4, rx: 1 }))
+        ),
+        e('div', { style: { fontSize: 18, fontWeight: 700, marginBottom: 8 } }, 'No skill tree yet'),
+        e('div', { style: { fontSize: 14, color: 'var(--muted)', marginBottom: 28 } }, 'Build your roadmap to see skills'),
+        e('button', { onClick: () => { haptic(); this.freshOnboarding()() }, style: { padding: '14px 28px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--blue-ink))', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' } }, 'Build roadmap')
+      )
+    }
+
+    const phases = rm.phases || []
+    const curIdx = this._currentPhaseIdx()
+
+    return e('div', { style: { padding: '0 20px 24px' } },
+      e('div', { style: { fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 4 } }, 'Skill Tree'),
+      e('div', { style: { fontSize: 13, color: 'var(--muted)', marginBottom: 20 } }, rm.headline),
+      e('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+        phases.map((p, i) => {
+          const isOpen = !!expanded[i]
+          const pct = this._phasePct(i)
+          const col = LearnFlow.PHASE_COLORS[i % LearnFlow.PHASE_COLORS.length].color
+          return e('div', { key: i, style: { borderRadius: 16, background: 'var(--surface)', border: `1px solid ${i === curIdx ? 'var(--blue)' : 'var(--border)'}`, overflow: 'hidden' } },
+            // Phase header — tap to expand/collapse
+            e('div', { onClick: () => { haptic(); this.setState((st) => ({ expandedSkillPhases: { ...st.expandedSkillPhases, [i]: !st.expandedSkillPhases[i] } })) }, style: { display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', cursor: 'pointer' } },
+              e('div', { style: { width: 36, height: 36, borderRadius: 11, background: pct === 100 ? col : 'var(--surface-2)', color: pct === 100 ? '#fff' : col, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, flexShrink: 0 } }, pct === 100 ? '✓' : String(p.n)),
+              e('div', { style: { flex: 1, minWidth: 0 } },
+                e('div', { style: { fontSize: 14, fontWeight: 700 } }, p.title),
+                e('div', { style: { fontSize: 11, color: 'var(--muted)', marginTop: 2 } }, pct + '% · ' + (p.skills?.length || 0) + ' skills')
+              ),
+              e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--muted)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', style: { transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform .2s', flexShrink: 0 } }, e('path', { d: 'M9 18l6-6-6-6' }))
+            ),
+            // Skills list (expanded)
+            isOpen && e('div', { style: { borderTop: '1px solid var(--border)', padding: '10px 16px 14px' } },
+              (p.skills || []).map((sk, si) =>
+                e('div', { key: si, style: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: si < p.skills.length - 1 ? '1px solid var(--border)' : 'none' } },
+                  e('div', { style: { width: 8, height: 8, borderRadius: '50%', background: col, flexShrink: 0 } }),
+                  e('span', { style: { fontSize: 14, color: 'var(--text)' } }, sk)
+                )
+              ),
+              p.projects?.length > 0 && e('div', { style: { marginTop: 12 } },
+                e('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.05em', marginBottom: 8 } }, 'PROJECTS'),
+                p.projects.map((pr, pi) =>
+                  e('div', { key: pi, style: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '6px 0' } },
+                    e('div', { style: { width: 18, height: 18, borderRadius: 6, background: col + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 } },
+                      e('svg', { width: 10, height: 10, viewBox: '0 0 24 24', fill: 'none', stroke: col, strokeWidth: 2.5 }, e('path', { d: 'M12 3v18M3 12h18' }))
+                    ),
+                    e('span', { style: { fontSize: 13, color: 'var(--muted)', lineHeight: 1.45 } }, pr)
+                  )
+                )
+              )
+            )
+          )
+        })
+      )
+    )
+  }
+
+  // ── Library tab ───────────────────────────────────────────────────────────────
+
+  buildNativeLibrary() {
+    const rm = this.state.roadmap
+
+    if (!rm) {
+      return e('div', { style: { padding: '0 20px 24px', textAlign: 'center', paddingTop: 56 } },
+        e('div', { style: { width: 72, height: 72, borderRadius: 22, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' } },
+          e('svg', { width: 34, height: 34, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--muted)', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M6 4h10v16H8a2 2 0 0 1-2-2z' }), e('path', { d: 'M6 4v18' }))
+        ),
+        e('div', { style: { fontSize: 18, fontWeight: 700, marginBottom: 8 } }, 'No library yet'),
+        e('div', { style: { fontSize: 14, color: 'var(--muted)', marginBottom: 28 } }, 'Build your roadmap to unlock resources'),
+        e('button', { onClick: () => { haptic(); this.freshOnboarding()() }, style: { padding: '14px 28px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--blue-ink))', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' } }, 'Build roadmap')
+      )
+    }
+
+    const phases = rm.phases || []
+
+    // Flatten all courses across phases, parse "Title — Platform | URL"
+    const allCourses = phases.flatMap((p, pi) =>
+      (p.courses || []).map((c) => {
+        const [titlePart, urlPart] = c.split(' | ')
+        const dashIdx = titlePart.lastIndexOf(' — ')
+        const title = dashIdx >= 0 ? titlePart.slice(0, dashIdx).trim() : titlePart.trim()
+        const platform = dashIdx >= 0 ? titlePart.slice(dashIdx + 3).trim() : ''
+        const url = urlPart?.trim()
+        const col = LearnFlow.PHASE_COLORS[pi % LearnFlow.PHASE_COLORS.length].color
+        return { title, platform, url, phase: p.title, phaseN: p.n, col }
+      })
+    )
+
+    return e('div', { style: { padding: '0 20px 24px' } },
+      e('div', { style: { fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 4 } }, 'Library'),
+      e('div', { style: { fontSize: 13, color: 'var(--muted)', marginBottom: 20 } }, allCourses.length + ' resources from your roadmap'),
+      e('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+        allCourses.map((c, i) =>
+          e('div', { key: i, style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', padding: '14px 16px' } },
+            e('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 12 } },
+              e('div', { style: { width: 38, height: 38, borderRadius: 12, background: c.col + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } },
+                e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c.col, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M6 4h10v16H8a2 2 0 0 1-2-2z' }), e('path', { d: 'M6 4v18' }))
+              ),
+              e('div', { style: { flex: 1, minWidth: 0 } },
+                e('div', { style: { fontSize: 14, fontWeight: 700, lineHeight: 1.4 } }, c.title),
+                e('div', { style: { fontSize: 12, color: 'var(--muted)', marginTop: 3 } }, c.platform || 'Resource'),
+                e('div', { style: { marginTop: 6 } },
+                  e('span', { style: { fontSize: 11, fontWeight: 600, color: c.col, background: c.col + '18', borderRadius: 6, padding: '2px 8px' } }, 'Phase ' + c.phaseN + ' · ' + c.phase)
+                )
+              )
+            ),
+            c.url && e('a', { href: c.url, target: '_blank', rel: 'noreferrer', onClick: () => haptic(), style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, padding: '9px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--blue)', fontSize: 13, fontWeight: 600, textDecoration: 'none' } },
+              e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }), e('polyline', { points: '15 3 21 3 21 9' }), e('line', { x1: 10, y1: 14, x2: 21, y2: 3 })),
+              'Open resource'
+            )
+          )
+        )
+      )
+    )
+  }
+
+  // ── Goals tab ─────────────────────────────────────────────────────────────────
+
+  buildNativeGoals() {
+    const s = this.state
+    const rm = s.roadmap
+    const milestones = rm?.milestones || []
+    const customGoals = s.customGoals || []
+
+    return e('div', { style: { padding: '0 20px 24px' } },
+      e('div', { style: { fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 20 } }, 'Goals'),
+
+      // Roadmap milestones
+      milestones.length > 0 && e('div', { style: { marginBottom: 24 } },
+        e('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.08em', marginBottom: 10 } }, 'ROADMAP MILESTONES'),
+        e('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+          milestones.map((m, i) => {
+            const isDone = m.st === 'done'
+            return e('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', borderRadius: 14, background: 'var(--surface)', border: '1px solid var(--border)' } },
+              e('div', { style: { width: 32, height: 32, borderRadius: 10, background: isDone ? 'var(--emerald)' : 'var(--amber-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } },
+                isDone
+                  ? e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 3 }, e('path', { d: 'M20 6 9 17l-5-5' }))
+                  : e('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--amber)', strokeWidth: 2.2 }, e('polygon', { points: '12 2 15.1 8.3 22 9.3 17 14.2 18.2 21 12 17.8 5.8 21 7 14.2 2 9.3 8.9 8.3 12 2' }))
+              ),
+              e('div', { style: { flex: 1 } },
+                e('div', { style: { fontSize: 14, fontWeight: 600 } }, m.t),
+                e('div', { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } }, m.d)
+              )
+            )
+          })
+        )
+      ),
+
+      // Custom goals
+      e('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.08em', marginBottom: 10 } }, 'MY GOALS'),
+      customGoals.length > 0 && e('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 } },
+        customGoals.map((g) =>
+          e('div', { key: g.id, style: { padding: '13px 14px', borderRadius: 14, background: 'var(--surface)', border: '1px solid var(--border)' } },
+            e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 } },
+              e('div', { style: { fontSize: 14, fontWeight: 600, flex: 1, marginRight: 8 } }, g.t),
+              e('span', { style: { fontSize: 13, fontWeight: 800, color: 'var(--blue)', flexShrink: 0 } }, (g.pct || 0) + '%')
+            ),
+            e('div', { style: { height: 6, borderRadius: 99, background: 'var(--surface-3)', overflow: 'hidden', marginBottom: 10 } },
+              e('div', { style: { height: '100%', width: (g.pct || 0) + '%', borderRadius: 99, background: 'var(--blue)', transition: 'width .3s' } })
+            ),
+            e('input', { type: 'range', min: 0, max: 100, value: g.pct || 0, onChange: (ev) => this.updateGoalPct(g.id, Number(ev.target.value)), style: { width: '100%', accentColor: 'var(--blue)', cursor: 'pointer' } })
+          )
+        )
+      ),
+
+      // Add goal form
+      s.addingGoal
+        ? e('div', { style: { borderRadius: 14, border: '1.5px solid var(--blue)', padding: '14px', display: 'flex', flexDirection: 'column', gap: 10 } },
+            e('input', { type: 'text', value: s.addGoalText, onChange: (ev) => this.setState({ addGoalText: ev.target.value }), placeholder: 'Goal description…', autoFocus: true, style: { width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' } }),
+            e('div', { style: { display: 'flex', gap: 8 } },
+              e('button', { onClick: () => { this.addCustomGoal(); this.setState({ addingGoal: false }) }, style: { flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: 'var(--blue)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' } }, 'Add goal'),
+              e('button', { onClick: () => this.setState({ addingGoal: false, addGoalText: '' }), style: { padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' } }, 'Cancel')
+            )
+          )
+        : e('button', { onClick: () => { haptic(); this.setState({ addingGoal: true }) }, style: { width: '100%', padding: '14px', borderRadius: 14, border: '1.5px dashed var(--border-strong)', background: 'transparent', color: 'var(--muted)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' } }, '+ Add goal')
     )
   }
 }

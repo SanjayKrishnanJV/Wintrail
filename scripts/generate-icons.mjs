@@ -20,32 +20,38 @@ const splashSvgPath = join(root, 'resources/splash.svg')
 const iconSvg   = readFileSync(iconSvgPath)
 const splashSvg = readFileSync(splashSvgPath)
 
-// If the user dropped in public/logo.png, use it as the icon source:
-// center it on a white 1024×1024 square (with padding) so it looks great at all sizes.
+// App icon: crop just the tree mark (left ~37% of logo) then centre on white square.
+// The logo is: [tree mark | divider | text]. Tree occupies the left third.
 async function makeIconBuf() {
   if (existsSync(logoPngPath)) {
-    console.log('  Using public/logo.png as app icon source')
-    const padding = 80
+    console.log('  Cropping tree mark from public/logo.png for app icon')
+    const { width: logoW, height: logoH } = await sharp(logoPngPath).metadata()
+    // Crop left 37% of the logo to isolate the tree mark
+    const cropW = Math.round(logoW * 0.37)
+    const treeCrop = await sharp(logoPngPath)
+      .extract({ left: 0, top: 0, width: cropW, height: logoH })
+      .png().toBuffer()
+    // Scale the crop to fit inside a 1024×1024 square with padding
+    const padding = 100
     const inner   = 1024 - padding * 2
-    const resized = await sharp(logoPngPath)
+    const resized = await sharp(treeCrop)
       .resize(inner, inner, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 1 } })
       .png().toBuffer()
-    const { width, height } = await sharp(resized).metadata()
-    const top  = Math.round((1024 - height) / 2)
-    const left = Math.round((1024 - width)  / 2)
+    const { width: rw, height: rh } = await sharp(resized).metadata()
     return sharp({ create: { width: 1024, height: 1024, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } })
-      .composite([{ input: resized, top, left }])
+      .composite([{ input: resized, top: Math.round((1024 - rh) / 2), left: Math.round((1024 - rw) / 2) }])
       .png().toBuffer()
   }
-  // Fallback: render the SVG
   return sharp(iconSvg).resize(1024, 1024).png().toBuffer()
 }
 
-// Splash: logo.png centred on 2732×2732 white background
+// Splash: logo centred on white canvas, small enough to stay inside the safe zone
+// on all devices (scaleAspectFill crops outer edges — keep logo within centre ~800px).
 async function makeSplashBuf(w, h) {
   if (existsSync(logoPngPath)) {
-    const maxW = Math.round(w * 0.65)
-    const maxH = Math.round(h * 0.4)
+    // Max 800px wide regardless of canvas size — stays within safe zone on all iPhones
+    const maxW = Math.min(800, Math.round(w * 0.29))
+    const maxH = Math.round(h * 0.15)
     const resized = await sharp(logoPngPath)
       .resize(maxW, maxH, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 1 } })
       .png().toBuffer()

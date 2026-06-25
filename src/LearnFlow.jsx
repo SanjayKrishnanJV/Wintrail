@@ -2708,6 +2708,20 @@ export default class LearnFlow extends React.Component {
           e('div', { style: { fontSize: 11, color: 'var(--subtle)', fontStyle: 'italic' } }, 'Coming soon — link will be added once approved on Google Play')
         )
       ),
+      // Open on phone (APNs push) — only shown when logged in
+      this.state.user && e('div', { style: { borderRadius: 18, background: 'var(--surface)', border: '1px solid var(--border)', padding: '24px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', boxShadow: 'var(--shadow-sm)' } },
+        e('div', { style: { flex: 1 } },
+          e('div', { style: { fontSize: 16, fontWeight: 700, marginBottom: 4 } }, 'Open on your phone'),
+          e('div', { style: { fontSize: 13, color: 'var(--muted)' } }, 'Send a push notification to your phone where you\'re already signed in.')
+        ),
+        e('button', { className: 'lf-btn', onClick: () => this._sendOpenOnPhone(),
+          style: { padding: '11px 20px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' } },
+          e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+            e('path', { d: 'M7 3h10v18H7z' }), e('path', { d: 'M10 18h4' })
+          ),
+          this.state._notifyStatus || 'Open on phone'
+        )
+      ),
       // Divider
       e('div', { style: { borderTop: '1px solid var(--border)', paddingTop: 24 } },
         e('div', { style: { fontSize: 15, fontWeight: 700, marginBottom: 16 } }, 'App preview'),
@@ -2718,6 +2732,27 @@ export default class LearnFlow extends React.Component {
           this.phone('AI Mentor', mentor, 3))
       )
     )
+  }
+
+  async _sendOpenOnPhone() {
+    if (!this.state.user) return
+    this.setState({ _notifyStatus: 'Sending…' })
+    try {
+      const res = await fetch(API_BASE + '/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: this.state.user.id }),
+      })
+      const data = await res.json()
+      if (data.sent > 0) {
+        this.setState({ _notifyStatus: `Sent to ${data.sent} device${data.sent > 1 ? 's' : ''} ✓` })
+      } else {
+        this.setState({ _notifyStatus: data.message || 'No devices found' })
+      }
+    } catch {
+      this.setState({ _notifyStatus: 'Failed — check connection' })
+    }
+    setTimeout(() => this.setState({ _notifyStatus: null }), 4000)
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

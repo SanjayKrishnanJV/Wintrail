@@ -3,10 +3,6 @@
   "appName": "LearnFlow AI",
   "webDir": "dist",
   "bundledWebRuntime": false,
-  "server": {
-    "url": "https://learnflow-ai-two.vercel.app",
-    "cleartext": false
-  },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 2000,

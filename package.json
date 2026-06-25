@@ -13,7 +13,10 @@
     "cap:android": "npm run build:mobile && npx cap sync android && npx cap open android",
     "cap:add:ios": "npx cap add ios",
     "cap:add:android": "npx cap add android",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "dev:ios": "cp capacitor.config.dev.json capacitor.config.json && npx cap sync ios && npx cap open ios",
+    "dev:android": "cp capacitor.config.dev.json capacitor.config.json && npx cap sync android && npx cap open android",
+    "prod:config": "cp capacitor.config.prod.json capacitor.config.json"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",

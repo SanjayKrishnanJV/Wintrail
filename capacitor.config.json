@@ -3,10 +3,6 @@
   "appName": "Wintrail",
   "webDir": "dist",
   "bundledWebRuntime": false,
-  "server": {
-    "url": "https://wintrail.vercel.app",
-    "cleartext": false
-  },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 2000,

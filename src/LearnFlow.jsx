@@ -292,6 +292,17 @@ export default class LearnFlow extends React.Component {
 
   setSetting(key, val) { this.setState((s) => ({ settings: { ...s.settings, [key]: val } })) }
 
+  freshOnboarding() {
+    return () => this.setState({
+      screen: 'onboarding',
+      obStep: 1,
+      obData: { topic: '', level: '', goal: '', time: '' },
+      obPhase: 'question',
+      obGenIdx: 0,
+      obCustom: '',
+    })
+  }
+
   resetRoadmap() {
     this.setState({
       roadmap: null, tasks: null, progress: { streak: 0, hoursStudied: 0, lastDate: null },
@@ -349,7 +360,8 @@ export default class LearnFlow extends React.Component {
         if (error) throw error
         const resolvedName = authName.trim() || authEmail.split('@')[0]
         if (data.session) {
-          this.setState({ user: data.user, userName: resolvedName, authLoading: false, authName: '', authEmail: '', authPassword: '', screen: 'onboarding' })
+          localStorage.removeItem('lf_state')
+          this.setState({ user: data.user, userName: resolvedName, authLoading: false, authName: '', authEmail: '', authPassword: '', screen: 'onboarding', obStep: 1, obData: { topic: '', level: '', goal: '', time: '' }, obPhase: 'question', obGenIdx: 0, obCustom: '', roadmap: null, tasks: null, progress: { streak: 0, hoursStudied: 0, lastDate: null, dates: [] } })
         } else {
           this.setState({ authLoading: false, authError: '✉️ Check your inbox to confirm your account, then sign in.' })
         }
@@ -418,7 +430,7 @@ export default class LearnFlow extends React.Component {
       isAuth: screen === 'auth',
       isMentor: screen === 'mentor',
       isApp: !['landing', 'onboarding', 'auth', 'mentor'].includes(screen),
-      goStart: supabase ? this.go('auth') : this.go('onboarding'),
+      goStart: supabase ? this.go('auth') : this.freshOnboarding(),
       isDashboard: screen === 'dashboard', isRoadmap: screen === 'roadmap', isPlanner: screen === 'planner',
       isAnalytics: screen === 'analytics', isSkilltree: screen === 'skilltree', isLibrary: screen === 'library',
       isGoals: screen === 'goals', isSettings: screen === 'settings', isMobile: screen === 'mobile',
@@ -896,7 +908,7 @@ export default class LearnFlow extends React.Component {
           {/* Skip */}
           <div style={S('text-align:center; margin-top:20px')}>
             <span
-              onClick={v.goTo.onboarding}
+              onClick={this.freshOnboarding()}
               style={S('font-size:13.5px; color:var(--muted); cursor:pointer; font-weight:500')}
             >
               Continue without an account →
@@ -1163,7 +1175,7 @@ export default class LearnFlow extends React.Component {
                       e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--subtle)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('path', { d: 'M9 6l6 6-6 6' })))))
               : e('div', { style: { textAlign: 'center', padding: '20px 0', color: 'var(--muted)', fontSize: 14 } },
                   e('div', { style: { marginBottom: 10 } }, 'No active roadmap yet.'),
-                  e('span', { onClick: this.go('onboarding'), style: { color: 'var(--blue)', fontWeight: 600, cursor: 'pointer' } }, 'Build my roadmap →'))),
+                  e('span', { onClick: this.freshOnboarding(), style: { color: 'var(--blue)', fontWeight: 600, cursor: 'pointer' } }, 'Build my roadmap →'))),
           e('div', { style: { borderRadius: 20, background: 'var(--surface)', border: '1px solid var(--border)', padding: 22, boxShadow: 'var(--shadow-sm)' } },
             e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 } },
               e('span', { style: { fontSize: 16, fontWeight: 700 } }, 'Weekly Progress'),
@@ -1250,7 +1262,7 @@ export default class LearnFlow extends React.Component {
       e('div', { style: { fontSize: 48, marginBottom: 16 } }, '🗺️'),
       e('div', { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, 'No roadmap yet'),
       e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginBottom: 24 } }, 'Tell Mentor AI your goal and get a personalised learning roadmap in seconds.'),
-      e('button', { className: 'lf-btn', onClick: this.go('onboarding'), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
+      e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
 
     const phases = this.roadmapData()
     const selIdx = Math.min(this.state.roadmapPhase, phases.length - 1)
@@ -1340,7 +1352,7 @@ export default class LearnFlow extends React.Component {
       e('div', { style: { fontSize: 48, marginBottom: 16 } }, '📅'),
       e('div', { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, 'No planner yet'),
       e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginBottom: 24 } }, 'Your weekly planner is generated from your roadmap tasks and phases.'),
-      e('button', { className: 'lf-btn', onClick: this.go('onboarding'), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
+      e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
 
     const week = (() => {
       const phase = rm.phases && rm.phases[0]
@@ -1417,7 +1429,7 @@ export default class LearnFlow extends React.Component {
       e('div', { style: { fontSize: 48, marginBottom: 16 } }, '📊'),
       e('div', { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, 'No data yet'),
       e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginBottom: 24 } }, label),
-      e('button', { className: 'lf-btn', onClick: this.go('onboarding'), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
+      e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
     if (!rm) return emptyState('Generate your roadmap to start tracking your learning analytics.')
 
     const phases = rm.phases || []
@@ -1516,7 +1528,7 @@ export default class LearnFlow extends React.Component {
       e('div', { style: { fontSize: 48, marginBottom: 16 } }, '🌳'),
       e('div', { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, 'No skill tree yet'),
       e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginBottom: 24 } }, 'Your skill tree is generated from your learning roadmap.'),
-      e('button', { className: 'lf-btn', onClick: this.go('onboarding'), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
+      e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
     if (!rm) return emptyState()
 
     const phases = rm.phases || []
@@ -1598,7 +1610,7 @@ export default class LearnFlow extends React.Component {
       e('div', { style: { fontSize: 48, marginBottom: 16 } }, '📚'),
       e('div', { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, 'No resources yet'),
       e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginBottom: 24 } }, 'Your library is populated with courses and resources from your roadmap.'),
-      e('button', { className: 'lf-btn', onClick: this.go('onboarding'), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
+      e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
 
     // Build items from roadmap phases
     const allItems = []
@@ -1644,7 +1656,7 @@ export default class LearnFlow extends React.Component {
       e('div', { style: { fontSize: 48, marginBottom: 16 } }, '🎯'),
       e('div', { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, 'No goals yet'),
       e('div', { style: { fontSize: 14.5, color: 'var(--muted)', marginBottom: 24 } }, 'Your goals and milestones are generated from your roadmap.'),
-      e('button', { className: 'lf-btn', onClick: this.go('onboarding'), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
+      e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '12px 22px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 14.5, cursor: 'pointer' } }, 'Build my roadmap'))
 
     const phases = rm.phases || []
     const milestones = rm.milestones || []
@@ -1753,7 +1765,7 @@ export default class LearnFlow extends React.Component {
             e('button', { className: 'lf-btn', onClick: () => this.resetRoadmap(), style: { padding: '10px 16px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer' } }, 'Change learning path'))
         ) : e('div', { style: { display: 'flex', alignItems: 'center', gap: 14 } },
           e('div', { style: { flex: 1, fontSize: 14, color: 'var(--muted)' } }, 'No roadmap yet. Complete onboarding to generate your personalized learning path.'),
-          e('button', { className: 'lf-btn', onClick: () => this.go('onboarding')(), style: { padding: '10px 16px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 13.5, cursor: 'pointer', whiteSpace: 'nowrap' } }, 'Build my roadmap'))),
+          e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '10px 16px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 13.5, cursor: 'pointer', whiteSpace: 'nowrap' } }, 'Build my roadmap'))),
 
       card('Appearance',
         row('Dark mode', 'Switch between light and dark themes', toggle(dark, () => this.toggleTheme())),

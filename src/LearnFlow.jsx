@@ -465,7 +465,9 @@ export default class LearnFlow extends React.Component {
     this.setState((s) => {
       const saved = s.savedRoadmaps.filter((r) => r.id !== id)
       const roadmap = s.roadmap?.id === id ? (saved[0] || null) : s.roadmap
-      return { savedRoadmaps: saved, roadmap, confirmDelete: null }
+      // If no roadmaps left, go to dashboard; otherwise stay where the user is
+      const screen = !roadmap ? 'dashboard' : s.screen
+      return { savedRoadmaps: saved, roadmap, confirmDelete: null, screen }
     }, async () => {
       // Must use a direct upsert here — _saveToSupabase() skips null roadmap
       // to protect against accidental overwrites during loading, but for an
@@ -647,8 +649,13 @@ export default class LearnFlow extends React.Component {
         if (data.kanban_cards) patch.kanbanCards = data.kanban_cards
         if (data.expanded_skill_phases) patch.expandedSkillPhases = data.expanded_skill_phases
         if (Array.isArray(data.custom_goals)) patch.customGoals = data.custom_goals
-        // Navigate to dashboard only if Supabase has meaningful data
-        if (data.roadmap || data.user_name) patch.screen = 'dashboard'
+        // Only navigate to dashboard if the user is still on a pre-app screen
+        // (auth/landing/onboarding). Never redirect mid-session — that breaks
+        // realtime sync where loadFromSupabase fires while the user is browsing.
+        const preAppScreens = ['landing', 'auth', 'onboarding']
+        if ((data.roadmap || data.user_name) && preAppScreens.includes(this.state.screen)) {
+          patch.screen = 'dashboard'
+        }
         if (Object.keys(patch).length) {
           this.setState(patch, () => {
             const todayIso = new Date().toISOString().slice(0, 10)
@@ -1789,19 +1796,17 @@ export default class LearnFlow extends React.Component {
     const saved = this.state.savedRoadmaps
 
     return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 22 } },
-      // Roadmap switcher — shown only when multiple roadmaps exist
-      saved.length > 1 && e('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
-        e('span', { style: { fontSize: 13, fontWeight: 600, color: 'var(--muted)' } }, 'Your roadmaps:'),
+      // Roadmap switcher + delete (shown for all counts)
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
+        saved.length > 1 && e('span', { style: { fontSize: 13, fontWeight: 600, color: 'var(--muted)' } }, 'Your roadmaps:'),
         e('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 } },
-          saved.map((r, i) => {
+          saved.map((r) => {
             const isActive = r.id === rm.id
             return e('div', { key: r.id, style: { display: 'flex', alignItems: 'center', gap: 0, borderRadius: 10, border: '1.5px solid ' + (isActive ? 'var(--blue)' : 'var(--border)'), background: isActive ? 'var(--blue-soft)' : 'var(--surface)', overflow: 'hidden' } },
               e('button', { className: 'lf-btn', onClick: () => this.switchRoadmap(r.id), style: { padding: '7px 13px', border: 'none', background: 'transparent', color: isActive ? 'var(--blue-ink)' : 'var(--muted)', fontWeight: isActive ? 700 : 500, fontSize: 13, cursor: 'pointer' } }, r.headline),
-              !isActive && e('button', { className: 'lf-btn', onClick: () => this.setState({ confirmDelete: { type: 'roadmap', id: r.id, label: r.headline || 'this roadmap' } }), style: { padding: '7px 8px', border: 'none', background: 'transparent', color: 'var(--subtle)', fontSize: 13, cursor: 'pointer', lineHeight: 1 } }, '×'))
+              e('button', { className: 'lf-btn', onClick: () => this.setState({ confirmDelete: { type: 'roadmap', id: r.id, label: r.headline || 'this roadmap' } }), style: { padding: '7px 8px', border: 'none', background: 'transparent', color: 'var(--subtle)', fontSize: 13, cursor: 'pointer', lineHeight: 1 } }, '×'))
           })),
-        e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '8px 14px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' } }, '+ New roadmap')),
-      saved.length === 1 && e('div', { style: { display: 'flex', justifyContent: 'flex-end' } },
-        e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '8px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--muted)', fontWeight: 600, fontSize: 13, cursor: 'pointer' } }, '+ Build another roadmap')),
+        e('button', { className: 'lf-btn', onClick: this.freshOnboarding(), style: { padding: '8px 14px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,var(--blue),var(--violet))', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' } }, '+ New')),
       this.state.confirmDelete && e('div', { key: 'confirm-modal', style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' } },
         e('div', { style: { background: 'var(--surface)', borderRadius: 20, padding: '28px', maxWidth: 400, width: '100%', margin: '0 16px', boxShadow: 'var(--shadow-lg)' } },
           e('div', { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, 'Delete roadmap?'),

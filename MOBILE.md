@@ -9,9 +9,9 @@ Bundle ID: `com.wintrail.app`
 
 | Field | URL |
 |---|---|
-| Privacy Policy | https://learnflow-ai-two.vercel.app/privacy.html |
-| Terms of Service | https://learnflow-ai-two.vercel.app/terms.html |
-| Support URL | https://learnflow-ai-two.vercel.app/support.html |
+| Privacy Policy | https://wintrail.vercel.app/privacy.html |
+| Terms of Service | https://wintrail.vercel.app/terms.html |
+| Support URL | https://wintrail.vercel.app/support.html |
 | Marketing URL | https://wintrail.vercel.app |
 | Support Email | Sanjaykrishnanjv@gmail.com |
 
@@ -83,9 +83,9 @@ npm run cap:ios   # builds + opens Xcode
 | Subtitle | Your AI Learning Architect |
 | Category | Education |
 | Content Rating | 4+ |
-| Privacy Policy URL | https://learnflow-ai-two.vercel.app/privacy.html |
-| Terms of Service URL | https://learnflow-ai-two.vercel.app/terms.html |
-| Support URL | https://learnflow-ai-two.vercel.app/support.html |
+| Privacy Policy URL | https://wintrail.vercel.app/privacy.html |
+| Terms of Service URL | https://wintrail.vercel.app/terms.html |
+| Support URL | https://wintrail.vercel.app/support.html |
 | Marketing URL | https://wintrail.vercel.app |
 
 ---
@@ -126,7 +126,7 @@ android {
 | Short description | AI-powered personalised learning roadmaps |
 | Category | Education |
 | Content rating | Everyone |
-| Privacy Policy URL | https://learnflow-ai-two.vercel.app/privacy.html |
+| Privacy Policy URL | https://wintrail.vercel.app/privacy.html |
 
 ---
 

@@ -3360,9 +3360,9 @@ export default class LearnFlow extends React.Component {
       // LINKS section
       e('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.08em', marginBottom: 8 } }, 'LINKS'),
       e('div', { style: { borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 20 } },
-        linkRow('Privacy Policy', 'https://learnflow-ai-two.vercel.app/privacy.html'),
-        linkRow('Terms & Conditions', 'https://learnflow-ai-two.vercel.app/terms.html'),
-        linkRow('Support', 'https://learnflow-ai-two.vercel.app/support.html'),
+        linkRow('Privacy Policy', 'https://wintrail.vercel.app/privacy.html'),
+        linkRow('Terms & Conditions', 'https://wintrail.vercel.app/terms.html'),
+        linkRow('Support', 'https://wintrail.vercel.app/support.html'),
         e('button', { onClick: () => window.open('https://wintrail.vercel.app', '_system'), style: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' } },
           e('div', { style: { flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' } }, 'Website'),
           e('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },

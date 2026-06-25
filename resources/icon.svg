@@ -1,46 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- Background -->
-  <rect width="1024" height="1024" rx="230" fill="#080C16"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="1024" height="1024">
+  <rect width="400" height="400" fill="white"/>
 
-  <!-- Subtle grid dots -->
-  <pattern id="grid" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
-    <circle cx="32" cy="32" r="2" fill="rgba(255,255,255,0.06)"/>
-  </pattern>
-  <rect width="1024" height="1024" rx="230" fill="url(#grid)"/>
+  <!-- ── OPEN BOOK BASE ─────────────────────────────────────── -->
+  <!-- Left page -->
+  <path d="M42,348 Q130,320 196,328 L196,345 Q130,338 42,365 Z" fill="#0D1B3E"/>
+  <!-- Right page -->
+  <path d="M204,328 Q272,320 358,348 L358,365 Q272,338 204,345 Z" fill="#152444"/>
+  <!-- Spine -->
+  <line x1="200" y1="324" x2="200" y2="346" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
 
-  <!-- Glow behind icon -->
-  <ellipse cx="512" cy="490" rx="280" ry="240" fill="#2563EB" opacity="0.18"/>
+  <!-- ── WINDING TRAIL ───────────────────────────────────────── -->
+  <path d="M200,340 Q186,310 200,282 Q214,254 200,228" fill="none"
+        stroke="rgba(255,255,255,0.55)" stroke-width="11" stroke-linecap="round"/>
 
-  <!-- Brain / neural network mark -->
-  <!-- Central node -->
-  <circle cx="512" cy="440" r="56" fill="#2563EB"/>
-  <circle cx="512" cy="440" r="44" fill="#1D4ED8"/>
-  <circle cx="512" cy="440" r="20" fill="white" opacity="0.95"/>
+  <!-- ── TRUNK ──────────────────────────────────────────────── -->
+  <path d="M192,342 C194,295 197,248 200,195
+           C203,248 206,295 208,342 Z" fill="#0D1B3E"/>
 
-  <!-- Satellite nodes -->
-  <circle cx="320" cy="340" r="32" fill="#3B82F6"/>
-  <circle cx="704" cy="340" r="32" fill="#3B82F6"/>
-  <circle cx="280" cy="540" r="24" fill="#60A5FA"/>
-  <circle cx="744" cy="540" r="24" fill="#60A5FA"/>
-  <circle cx="420" cy="620" r="28" fill="#3B82F6"/>
-  <circle cx="604" cy="620" r="28" fill="#3B82F6"/>
-  <circle cx="512" cy="680" r="20" fill="#93C5FD"/>
+  <!-- ── BRANCHES ───────────────────────────────────────────── -->
+  <line x1="200" y1="250" x2="145" y2="218" stroke="#0D1B3E" stroke-width="11" stroke-linecap="round"/>
+  <line x1="200" y1="234" x2="256" y2="200" stroke="#0D1B3E" stroke-width="11" stroke-linecap="round"/>
+  <line x1="200" y1="220" x2="176" y2="178" stroke="#0D1B3E" stroke-width="9"  stroke-linecap="round"/>
+  <line x1="200" y1="216" x2="226" y2="175" stroke="#0D1B3E" stroke-width="9"  stroke-linecap="round"/>
+  <line x1="200" y1="210" x2="200" y2="168" stroke="#0D1B3E" stroke-width="9"  stroke-linecap="round"/>
 
-  <!-- Connector lines -->
-  <line x1="512" y1="440" x2="320" y2="340" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
-  <line x1="512" y1="440" x2="704" y2="340" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
-  <line x1="512" y1="440" x2="280" y2="540" stroke="#60A5FA" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
-  <line x1="512" y1="440" x2="744" y2="540" stroke="#60A5FA" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
-  <line x1="512" y1="440" x2="420" y2="620" stroke="#3B82F6" stroke-width="7" stroke-linecap="round" opacity="0.65"/>
-  <line x1="512" y1="440" x2="604" y2="620" stroke="#3B82F6" stroke-width="7" stroke-linecap="round" opacity="0.65"/>
-  <line x1="512" y1="440" x2="512" y2="680" stroke="#93C5FD" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
+  <!-- ── LEAVES ─────────────────────────────────────────────── -->
+  <!-- Leaf = elongated ellipse rotated so its long axis points outward from canopy centre -->
+  <!-- Colors: dark navy/blue bottom-left → royal blue → teal → bright green top → teal → blue → dark blue bottom-right -->
 
-  <!-- Cross-connections -->
-  <line x1="320" y1="340" x2="280" y2="540" stroke="#3B82F6" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
-  <line x1="704" y1="340" x2="744" y2="540" stroke="#3B82F6" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
-  <line x1="420" y1="620" x2="604" y2="620" stroke="#60A5FA" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+  <!-- Bottom-left cluster — dark navy blue -->
+  <ellipse cx="105" cy="288" rx="20" ry="34" fill="#1A237E" transform="rotate(-52,105,288)"/>
+  <ellipse cx="80"  cy="264" rx="19" ry="32" fill="#1A237E" transform="rotate(-62,80,264)"/>
 
-  <!-- "LF" wordmark at bottom -->
-  <text x="512" y="870" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="96" font-weight="800" fill="white" text-anchor="middle" letter-spacing="-2">Wintrail</text>
-  <text x="512" y="950" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="46" font-weight="500" fill="#60A5FA" text-anchor="middle" letter-spacing="8">AI</text>
+  <!-- Left cluster — medium-dark blue -->
+  <ellipse cx="76"  cy="237" rx="20" ry="33" fill="#283593" transform="rotate(-68,76,237)"/>
+  <ellipse cx="92"  cy="208" rx="20" ry="33" fill="#1565C0" transform="rotate(-58,92,208)"/>
+
+  <!-- Upper-left cluster — royal → cobalt blue -->
+  <ellipse cx="115" cy="184" rx="20" ry="33" fill="#1976D2" transform="rotate(-46,115,184)"/>
+  <ellipse cx="146" cy="163" rx="20" ry="33" fill="#0288D1" transform="rotate(-30,146,163)"/>
+
+  <!-- Top-left — teal-cyan transition -->
+  <ellipse cx="174" cy="151" rx="20" ry="33" fill="#00ACC1" transform="rotate(-14,174,151)"/>
+
+  <!-- Top-centre — bright green (crown of tree) -->
+  <ellipse cx="200" cy="146" rx="21" ry="35" fill="#00C853" transform="rotate(0,200,146)"/>
+
+  <!-- Top-right — lime/green-teal -->
+  <ellipse cx="226" cy="151" rx="20" ry="33" fill="#4CAF50" transform="rotate(14,226,151)"/>
+  <ellipse cx="254" cy="163" rx="20" ry="33" fill="#26C6DA" transform="rotate(30,254,163)"/>
+
+  <!-- Upper-right cluster — teal → blue -->
+  <ellipse cx="282" cy="184" rx="20" ry="33" fill="#00ACC1" transform="rotate(46,282,184)"/>
+  <ellipse cx="303" cy="208" rx="20" ry="33" fill="#0097A7" transform="rotate(58,303,208)"/>
+
+  <!-- Right cluster — medium blue -->
+  <ellipse cx="320" cy="237" rx="20" ry="33" fill="#1565C0" transform="rotate(68,320,237)"/>
+
+  <!-- Bottom-right cluster — dark navy blue -->
+  <ellipse cx="316" cy="264" rx="19" ry="32" fill="#1A237E" transform="rotate(62,316,264)"/>
+  <ellipse cx="292" cy="288" rx="20" ry="34" fill="#1A237E" transform="rotate(52,292,288)"/>
 </svg>

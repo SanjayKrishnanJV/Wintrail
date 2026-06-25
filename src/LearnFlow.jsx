@@ -1002,11 +1002,8 @@ export default class LearnFlow extends React.Component {
       <div className="lf-screen lf-scroll" style={S('min-height:100vh; overflow-y:auto')}>
         <div style={S('position:sticky; top:0; z-index:30; backdrop-filter:blur(16px); background:var(--glass); border-bottom:1px solid var(--border)')}>
           <div style={S('max-width:1180px; margin:0 auto; padding:16px 28px; display:flex; align-items:center; justify-content:space-between')}>
-            <div style={S('display:flex; align-items:center; gap:11px')}>
-              <div style={S('width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm)')}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7l8-4 8 4-8 4-8-4z" /><path d="M4 7v6l8 4 8-4V7" /></svg>
-              </div>
-              <span style={S('font-weight:800; font-size:18px; letter-spacing:-.02em')}>Wintrail</span>
+            <div style={S('display:flex; align-items:center')}>
+              <img src="/logo.svg" alt="WinTrail AI" style={S('height:44px; width:auto')} />
             </div>
             <div style={S('display:flex; align-items:center; gap:26px')}>
               <span style={S('font-size:14px; color:var(--muted); font-weight:500; cursor:pointer')}>Features</span>
@@ -1168,9 +1165,8 @@ export default class LearnFlow extends React.Component {
     return (
       <div className="lf-screen" style={S('min-height:100vh; display:flex; flex-direction:column')}>
         <div style={S('padding:22px 28px; display:flex; align-items:center; justify-content:space-between')}>
-          <div style={S('display:flex; align-items:center; gap:11px')}>
-            <div style={S('width:32px; height:32px; border-radius:9px; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center')}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7l8-4 8 4-8 4-8-4z" /><path d="M4 7v6l8 4 8-4V7" /></svg></div>
-            <span style={S('font-weight:800; font-size:16px')}>Wintrail</span>
+          <div style={S('display:flex; align-items:center')}>
+            <img src="/logo.svg" alt="WinTrail AI" style={S('height:38px; width:auto')} />
           </div>
           <button className="lf-btn" onClick={this.state.user || this.state.savedRoadmaps.length > 0 ? v.goTo.dashboard : v.goTo.landing} style={S('padding:8px 14px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-size:13px; font-weight:600; cursor:pointer')}>{this.state.user || this.state.savedRoadmaps.length > 0 ? '← Back' : 'Skip'}</button>
         </div>
@@ -1415,9 +1411,8 @@ export default class LearnFlow extends React.Component {
     return (
       <div style={S('display:flex; min-height:100vh')}>
         <aside style={S('width:248px; flex:none; border-right:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; position:sticky; top:0; height:100vh')}>
-          <div style={S('padding:22px 20px 16px; display:flex; align-items:center; gap:11px')}>
-            <div style={S('width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm)')}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7l8-4 8 4-8 4-8-4z" /><path d="M4 7v6l8 4 8-4V7" /></svg></div>
-            <span style={S('font-weight:800; font-size:17px; letter-spacing:-.02em')}>Wintrail</span>
+          <div style={S('padding:16px 20px; display:flex; align-items:center')}>
+            <img src="/logo.svg" alt="WinTrail AI" style={S('height:40px; width:auto')} />
           </div>
           <div className="lf-scroll" style={S('flex:1; overflow-y:auto; padding:8px 12px; display:flex; flex-direction:column; gap:2px')}>
             <div style={S('font-size:11px; font-weight:700; color:var(--subtle); letter-spacing:.08em; padding:12px 12px 6px')}>MENU</div>
@@ -1472,9 +1467,8 @@ export default class LearnFlow extends React.Component {
     return (
       <div className="lf-screen" style={S('min-height:100vh; display:flex')}>
         <aside style={S('width:248px; flex:none; border-right:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; position:sticky; top:0; height:100vh')}>
-          <div style={S('padding:22px 20px 16px; display:flex; align-items:center; gap:11px')}>
-            <div style={S('width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center')}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7l8-4 8 4-8 4-8-4z" /><path d="M4 7v6l8 4 8-4V7" /></svg></div>
-            <span style={S('font-weight:800; font-size:17px')}>Wintrail</span>
+          <div style={S('padding:14px 20px; display:flex; align-items:center')}>
+            <img src="/logo.svg" alt="WinTrail AI" style={S('height:38px; width:auto')} />
           </div>
           <div style={S('padding:12px')}><button className="lf-btn" onClick={v.newChat} style={S('width:100%; padding:11px; border-radius:12px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text); font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px; justify-content:center')}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>New conversation</button></div>
           <div className="lf-scroll" style={S('flex:1; overflow-y:auto; padding:8px 12px')}>
@@ -2751,13 +2745,7 @@ export default class LearnFlow extends React.Component {
     return e('div', { style: { height: '100dvh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: 'flex', flexDirection: 'column', padding: '0 24px', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 52px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 32px)' } },
       // Logo
       e('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 48 } },
-        e('div', { style: { width: 76, height: 76, borderRadius: 24, background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, boxShadow: '0 8px 28px rgba(37,99,235,.35)' } },
-          e('svg', { width: 38, height: 38, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
-            e('path', { d: 'M4 7l8-4 8 4-8 4-8-4z' }), e('path', { d: 'M4 7v6l8 4 8-4V7' })
-          )
-        ),
-        e('div', { style: { fontSize: 26, fontWeight: 800, letterSpacing: '-.02em' } }, 'Wintrail'),
-        e('div', { style: { fontSize: 14, color: 'var(--muted)', marginTop: 4 } }, 'Your AI learning architect')
+        e('img', { src: '/logo.svg', alt: 'WinTrail AI', style: { height: 80, width: 'auto', marginBottom: 12 } })
       ),
       // Title
       e('div', { style: { marginBottom: 28 } },
@@ -3337,11 +3325,7 @@ export default class LearnFlow extends React.Component {
 
       // App identity hero
       e('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--border)' } },
-        e('div', { style: { width: 80, height: 80, borderRadius: 24, background: 'linear-gradient(135deg,var(--blue),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14, boxShadow: '0 8px 28px rgba(37,99,235,.35)' } },
-          e('span', { style: { fontSize: 36, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' } }, 'W')
-        ),
-        e('div', { style: { fontSize: 28, fontWeight: 800, letterSpacing: '-.03em' } }, 'Wintrail'),
-        e('div', { style: { fontSize: 14, color: 'var(--muted)', marginTop: 4, marginBottom: 10 } }, 'Your Personal AI Learning Architect'),
+        e('img', { src: '/logo.svg', alt: 'WinTrail AI', style: { height: 80, width: 'auto', marginBottom: 12 } }),
         e('div', { style: { padding: '5px 14px', borderRadius: 99, background: 'var(--blue-soft)', border: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--blue-ink)' } }, 'V1.0 (Build 1)')
       ),
 

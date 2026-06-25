@@ -1,17 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732" width="2732" height="2732">
-  <rect width="2732" height="2732" fill="white"/>
-
-  <!-- ── TREE MARK (centred, scaled ×4.5 from icon viewBox) ── -->
-  <g transform="translate(1366,1080) scale(4.5) translate(-200,-260)">
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 160" width="560" height="160">
+  <!-- ── TREE MARK (left, 140×140 centred in 160×160 box) ────── -->
+  <g transform="translate(10,10) scale(0.35) translate(-24,-200)">
     <!-- Open book base -->
     <path d="M42,348 Q130,320 196,328 L196,345 Q130,338 42,365 Z" fill="#0D1B3E"/>
     <path d="M204,328 Q272,320 358,348 L358,365 Q272,338 204,345 Z" fill="#152444"/>
-    <line x1="200" y1="324" x2="200" y2="346" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
-
-    <!-- Winding trail -->
-    <path d="M200,340 Q186,310 200,282 Q214,254 200,228" fill="none"
-          stroke="rgba(255,255,255,0.55)" stroke-width="11" stroke-linecap="round"/>
 
     <!-- Trunk -->
     <path d="M192,342 C194,295 197,248 200,195 C203,248 206,295 208,342 Z" fill="#0D1B3E"/>
@@ -21,7 +13,6 @@
     <line x1="200" y1="234" x2="256" y2="200" stroke="#0D1B3E" stroke-width="11" stroke-linecap="round"/>
     <line x1="200" y1="220" x2="176" y2="178" stroke="#0D1B3E" stroke-width="9"  stroke-linecap="round"/>
     <line x1="200" y1="216" x2="226" y2="175" stroke="#0D1B3E" stroke-width="9"  stroke-linecap="round"/>
-    <line x1="200" y1="210" x2="200" y2="168" stroke="#0D1B3E" stroke-width="9"  stroke-linecap="round"/>
 
     <!-- Leaves -->
     <ellipse cx="105" cy="288" rx="20" ry="34" fill="#1A237E" transform="rotate(-52,105,288)"/>
@@ -41,15 +32,19 @@
     <ellipse cx="292" cy="288" rx="20" ry="34" fill="#1A237E" transform="rotate(52,292,288)"/>
   </g>
 
-  <!-- ── APP NAME ─────────────────────────────────────────────── -->
-  <text font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-size="230" font-weight="900"
-        text-anchor="middle" y="1940" letter-spacing="-4">
-    <tspan x="1366" fill="#0D1B3E">WinTrail </tspan><tspan fill="#00BFA5">AI</tspan>
+  <!-- ── VERTICAL DIVIDER ────────────────────────────────────── -->
+  <line x1="158" y1="22" x2="158" y2="138" stroke="#CBD5E1" stroke-width="1.5"/>
+
+  <!-- ── WORDMARK ───────────────────────────────────────────── -->
+  <!-- "WinTrail" dark navy + "AI" teal on same baseline -->
+  <text font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-size="54" font-weight="900"
+        y="88" letter-spacing="-1">
+    <tspan x="176" fill="#0D1B3E">WinTrail</tspan><tspan fill="#00BFA5"> AI</tspan>
   </text>
 
-  <!-- ── TAGLINE ─────────────────────────────────────────────── -->
-  <text x="1366" y="2080" font-family="'Inter','Helvetica Neue',Arial,sans-serif"
-        font-size="72" font-weight="600" fill="#00BFA5" text-anchor="middle" letter-spacing="10">
+  <!-- Tagline -->
+  <text x="177" y="118" font-family="'Inter','Helvetica Neue',Arial,sans-serif"
+        font-size="14" font-weight="600" fill="#00BFA5" letter-spacing="2.5">
     LEARN TODAY. LEAD TOMORROW.
   </text>
 </svg>

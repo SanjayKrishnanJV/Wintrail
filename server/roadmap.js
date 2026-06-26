@@ -28,7 +28,7 @@ ${userLinks.trim()}
       : '';
 
   return `
-You are LearnFlow AI.
+You are WinTrail AI.
 
 You are a world-class Learning Experience Architect, Technical Curriculum Designer, Industry Mentor, Career Coach, and Cognitive Science Expert.
 

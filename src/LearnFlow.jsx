@@ -229,6 +229,7 @@ export default class LearnFlow extends React.Component {
   go(screen) {
     return () => {
       haptic()
+      if (screen !== 'onboarding') this._obIntentional = false
       this.setState({ screen })
       const m = document.querySelector('main.lf-scroll')
       if (m) m.scrollTop = 0
@@ -612,17 +613,21 @@ export default class LearnFlow extends React.Component {
   }
 
   freshOnboarding() {
-    return () => this.setState({
-      screen: 'onboarding',
-      obStep: 1,
-      obData: { topic: '', level: '', goal: '', time: '', hasLinks: '', userLinks: '' },
-      obPhase: 'question',
-      obGenIdx: 0,
-      obCustom: '',
-    })
+    return () => {
+      this._obIntentional = true
+      this.setState({
+        screen: 'onboarding',
+        obStep: 1,
+        obData: { topic: '', level: '', goal: '', time: '', hasLinks: '', userLinks: '' },
+        obPhase: 'question',
+        obGenIdx: 0,
+        obCustom: '',
+      })
+    }
   }
 
   resetRoadmap() {
+    this._obIntentional = true
     this.setState({
       roadmap: null, tasks: null, progress: { streak: 0, hoursStudied: 0, lastDate: null },
       obStep: 1, obData: { topic: '', level: '', goal: '', time: '', hasLinks: '', userLinks: '' }, obPhase: 'question', obGenIdx: 0, screen: 'onboarding',
@@ -654,8 +659,9 @@ export default class LearnFlow extends React.Component {
         // Only navigate to dashboard if the user is still on a pre-app screen
         // (auth/landing/onboarding). Never redirect mid-session — that breaks
         // realtime sync where loadFromSupabase fires while the user is browsing.
+        // Also skip if the user intentionally navigated to onboarding (e.g. "Build new roadmap").
         const preAppScreens = ['landing', 'auth', 'onboarding']
-        if ((data.roadmap || data.user_name) && preAppScreens.includes(this.state.screen)) {
+        if ((data.roadmap || data.user_name) && preAppScreens.includes(this.state.screen) && !this._obIntentional) {
           patch.screen = 'dashboard'
         }
         if (Object.keys(patch).length) {
